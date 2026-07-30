@@ -26,6 +26,20 @@ Backstage の生成アプリを土台にしつつ、IDP 独自機能はできる
 - `app-config.yaml`: ローカル開発・共通設定。
 - `app-config.production.yaml`: 本番向け設定。変更時は本番影響を明示する。
 
+## 製品判断時の必読コンテキスト
+
+製品判断、ロードマップ検討、次の製品成果の選定、issue 化、または Product Owner / Project Manager / improvement-proposer としての判断を行う前に、必ず次のファイルを確認する。
+
+- `README.md`: プロジェクト最上位の製品概要、North Star、現在の開発段階、非目標、参照先を確認する。
+- `docs/product/ai-native-control-plane-charter.md`: Bara Developer Platform の製品方針、MVP、control-plane object、製品原則、非目標を確認する。
+- `docs/adr/0001-idp-management-source-of-truth.md`: Project / Environment / Template / runtime record の source of truth 境界を確認する。
+- `docs/adr/0002-ai-action-approval-boundary.md`: AI action、approval、permission、audit の境界を確認する。
+- `docs/backstage-extension-policy.md`: Backstage 拡張時の plugin / module / extension 方針を確認する。
+- `docs/reviews/`: 直近の製品レビュー、未解決事項、次サイクルへの学習を確認する。
+- `docs/ai/output/`: 既存の agent 成果物がある場合、Product Owner / Project Manager / Product Reviewer の最新成果物を優先して確認する。
+
+上記を読んでも判断に必要な証跡が不足する場合は、停止せず、利用可能な証跡から次に検証可能な小さな一歩を選び、未確認事項とリスクを成果物に明記する。
+
 ## 変更後の品質確認・起動確認
 
 コードを変更した場合は、作業完了前に必ず品質確認と起動確認を行う。
@@ -51,7 +65,7 @@ yarn start
 
 ## Subagent の成果物
 
-- Project-local Agent system は、最終判断者から与えられた Project goal を Product Owner が小さな製品成果へ決定し、Project Manager が実装・品質レビュー・製品レビューまでを完結させる。Product Reviewer の発見は次サイクルの Product Owner の入力とする。center への逐次報告や、人間による製品採否・製品レビューはこのサイクルに含めない。
+- Project-local Agent system は、最終判断者から与えられた Project goal に対して、improvement-proposer がリポジトリと公開ニーズから根拠付きの IDP 機会候補を調査し、Product Owner が候補を小さな製品成果へ決定して GitHub Issue 化する。Project Manager はその Issue を起点に実装・品質レビュー・製品レビューまでを完結させる。Product Reviewer の発見は次サイクルの improvement-proposer と Product Owner の入力とする。center への逐次報告や、人間による製品採否・製品レビューはこのサイクルに含めない。
 - Product Owner、Project Manager、Product Reviewer を含むすべての Project-local Subagent は、sandbox 内でゴール達成に必要な調査、ファイル変更、検証、設定、連携を自律的に行う。役割の境界は操作権限ではなく、判断・実装・検証の責務を表す。
 - `.codex/agents/` の custom agent を使った場合、担当 agent または Project Manager は各最終成果物を Markdown として `docs/ai/output/<agent-name>/` に保存する。
 - ファイル名は `NNN-<内容を表すkebab-case名>.md` とし、`NNN` は agent ごとに `001` から始まる 3 桁の連番とする。

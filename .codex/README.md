@@ -4,25 +4,26 @@
 
 ## 役割と責務
 
-| 役割                   | 主な責務                                                                 | 入力                                               | 主な出力                                         |
-| ---------------------- | ------------------------------------------------------------------------ | -------------------------------------------------- | ------------------------------------------------ |
-| `product-owner`        | 次の小さな製品成果を選び、価値・受入条件・非対象・リスク・仮説を決定する | Project goal、設計原則、実装、レビュー、既存成果物 | `docs/ai/output/product-owner/` の決定記録       |
-| `project-manager`      | 決定済み成果を実行可能な単位へ分解し、配達サイクルを完結させる           | Product Owner の決定記録                           | `docs/ai/output/project-manager/` のサイクル記録 |
-| `improvement-proposer` | Product Owner 向けに根拠と候補を整理する                                 | リポジトリ、レビュー、未解決事項                   | 候補・比較レポート                               |
-| `implementer`          | Project Manager の work item を実装し、検証する                          | 実行計画、受入条件                                 | 実装・検証記録                                   |
-| `quality-reviewer`     | 独立して品質・安全性・回帰リスクを検証する                               | 決定、実装、検証証跡                               | 品質レビュー                                     |
-| `product-reviewer`     | 成果と受入条件を製品観点で検証し、次サイクルの学習を返す                 | 決定、実装、品質証跡、動作観測                     | 製品レビュー                                     |
+| 役割                   | 主な責務                                                                                          | 入力                                                 | 主な出力                                                   |
+| ---------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------- |
+| `product-owner`        | 根拠付き候補を比較し、decision-ready な成果を GitHub Issue 化したうえで、次の小さな製品成果を選ぶ | Project goal、候補レポート、設計原則、実装、レビュー | GitHub Issue と `docs/ai/output/product-owner/` の決定記録 |
+| `project-manager`      | 決定済み成果を実行可能な単位へ分解し、配達サイクルを完結させる                                    | Product Owner の決定記録                             | `docs/ai/output/project-manager/` のサイクル記録           |
+| `improvement-proposer` | リポジトリと公開ニーズから IDP の機会候補を発見し、根拠を整理する                                 | リポジトリ、レビュー、未解決事項、公開情報           | `docs/ai/output/improvement-proposer/` の候補レポート      |
+| `implementer`          | Project Manager の work item を実装し、検証する                                                   | 実行計画、受入条件                                   | 実装・検証記録                                             |
+| `quality-reviewer`     | 独立して品質・安全性・回帰リスクを検証する                                                        | 決定、実装、検証証跡                                 | 品質レビュー                                               |
+| `product-reviewer`     | 成果と受入条件を製品観点で検証し、次サイクルの学習を返す                                          | 決定、実装、品質証跡、動作観測                       | 製品レビュー                                               |
 
 `product-review-packager` は廃止し、`product-reviewer` に置き換えました。人間向けの資料作成ではなく、Agent 自身が成果を検証し、Product Owner へのフィードバックを作ります。
 
 ## 開発サイクル
 
-1. `product-owner` は `$select-product-outcome` を使い、Project goal と証跡から次の製品成果を決定して保存する。
-2. `project-manager` は決定記録だけを起点に work item と検証計画を作る。
-3. `implementer` が work item を実装して証跡を保存する。
-4. `quality-reviewer` が独立してレビューする。必要な修正と再レビューは `project-manager` が調整する。
-5. `product-reviewer` が受入条件、実装、品質証跡、動作をレビューする。
-6. `project-manager` はサイクル記録を保存し、`product-reviewer` の発見を次の `product-owner` の入力としてリンクする。
+1. `improvement-proposer` は `$discover-idp-opportunities` を使い、リポジトリと公開ニーズから根拠付きの IDP 機会候補を調査して保存する。
+2. `product-owner` は候補レポートと `$select-product-outcome` を使い、候補を比較する。decision-ready な成果は重複確認後に GitHub Issue として作成または再利用し、次の製品成果を決定して保存する。
+3. `project-manager` は決定記録に記載された GitHub Issue と受入条件を起点に work item と検証計画を作る。
+4. `implementer` が work item を実装して証跡を保存する。
+5. `quality-reviewer` が独立してレビューする。必要な修正と再レビューは `project-manager` が調整する。
+6. `product-reviewer` が受入条件、実装、品質証跡、動作をレビューする。
+7. `project-manager` はサイクル記録を保存し、`product-reviewer` の発見を次の `improvement-proposer` と `product-owner` の入力としてリンクする。
 
 center への逐次報告は行いません。center と最終判断者は Git 履歴、検証証跡、`docs/ai/output/`、未解決事項を後から観測します。最終判断者と center はこのサイクルの製品レビュー担当ではありません。
 
