@@ -28,7 +28,7 @@ Backstage の生成アプリを土台にしつつ、IDP 独自機能はできる
 
 ## 製品判断時の必読コンテキスト
 
-製品判断、ロードマップ検討、次の製品成果の選定、issue 化、または Product Owner / Project Manager / improvement-proposer としての判断を行う前に、必ず次のファイルを確認する。
+製品判断、ロードマップ検討、今回の運営サイクルの対象選定、Issue 化、または Product Owner としての判断を行う前に、必ず次のファイルを確認する。
 
 - `README.md`: プロジェクト最上位の製品概要、North Star、現在の開発段階、非目標、参照先を確認する。
 - `docs/product/ai-native-control-plane-charter.md`: Bara Developer Platform の製品方針、MVP、control-plane object、製品原則、非目標を確認する。
@@ -36,20 +36,20 @@ Backstage の生成アプリを土台にしつつ、IDP 独自機能はできる
 - `docs/adr/0002-ai-action-approval-boundary.md`: AI action、approval、permission、audit の境界を確認する。
 - `docs/backstage-extension-policy.md`: Backstage 拡張時の plugin / module / extension 方針を確認する。
 - `docs/reviews/`: 直近の製品レビュー、未解決事項、次サイクルへの学習を確認する。
-- `docs/ai/output/`: 既存の agent 成果物がある場合、Product Owner / Project Manager / Product Reviewer の最新成果物を優先して確認する。
+- `docs/ai/output/`: 既存の agent 成果物がある場合、Product Owner / Implementer / Quality Reviewer / Product Reviewer の最新成果物を優先して確認する。
 
 上記を読んでも判断に必要な証跡が不足する場合は、停止せず、利用可能な証跡から次に検証可能な小さな一歩を選び、未確認事項とリスクを成果物に明記する。
 
 ## 定期実行トリガー
 
-ユーザーが「定期実行して」「開発サイクルを実行して」、または同等の意図を示した場合、これは Bara Developer Platform の次の自律製品開発サイクルを開始する Project goal として扱う。追加の確認は不要とし、利用可能な証跡から次に検証可能な小さな製品成果を選び、開発サイクルを完結まで進める。
+ユーザーが「定期実行して」「開発サイクルを実行して」、または同等の意図を示した場合、これは Bara Developer Platform の次の自律製品運営サイクルを開始する Project goal として扱う。追加の確認は不要とし、Product Owner は利用可能な証跡から今回の対象成果群を選び、必要な delivery / discovery / maintenance を完結まで進める。運営サイクルは単一機能や単一 Issue に固定しない。対象はゼロ件、1 件、または複数件とし、各対象は独立して検証・公開可能な配達単位に分ける。
 
-1. `improvement-proposer` を用い、`$discover-idp-opportunities` に従って、リポジトリの現状、既存の成果物・レビュー、GitHub Issue、公開されたユーザーニーズを調査する。
-2. `product-owner` を用い、`$select-product-outcome` に従って候補を比較し、次の小さな製品成果を選定する。decision-ready な成果は既存 Issue を再利用するか、新規 GitHub Issue として作成する。
-3. `project-manager` が `implementer`、`quality-reviewer`、`product-reviewer` を通じて、実装、検証、必要な修正、独立した品質レビュー、製品レビューまでを完結させる。
+1. `product-owner` を用い、`$discover-idp-opportunities` に従って、リポジトリの現状、既存の成果物・レビュー、GitHub Issue、公開されたユーザーニーズを調査し、根拠付き候補を backlog Issue として作成または更新する。
+2. `product-owner` を用い、`$select-product-outcome` に従って候補と既存 backlog を比較し、今回の運営サイクルで扱う成果群、優先順位、受入条件、非対象、成果仮説を決定する。Product Owner は製品・UI・技術上のトレードオフを決定する唯一の役割とする。
+3. `product-owner` が `implementer`、`quality-reviewer`、`product-reviewer` を直接用いて、各配達単位を完結させる。Implementer は実装、検証、通常 PR の作成、レビュー指摘への修正を担い、Quality Reviewer と Product Reviewer は同じ PR を独立したレビュー対象として扱う。Product Owner はレビュー結果を受けて、継続、差し戻し、分割、保留を判断する。
 4. 各 agent は、最終成果物を `docs/ai/output/<agent-name>/` に保存する。
 5. 開発対象は Backstage の plugin / module / extension 方針を守り、`packages/app` と `packages/backend` の変更は必要最小限の配線に留める。
-6. 変更があるサイクルでは、Project Manager は成果物と実装を意図的に commit して remote へ push し、base branch に対する通常の GitHub Pull Request を作成する。Draft PR は用いない。PR には変更内容、利用者・開発者への影響、実行した検証、残余リスクを記載し、PR URL を Project Manager の最終成果物に残す。PR 作成までをサイクル完了条件とする。
+6. 変更がある配達単位では、Implementer は成果物と実装を意図的に commit して remote へ push し、base branch に対する通常の GitHub Pull Request を作成する。Draft PR は用いない。PR には変更内容、利用者・開発者への影響、実行した検証、残余リスクを記載し、PR URL を Implementer の成果物と Product Owner の運営サイクル成果物に残す。PR 作成までを配達単位の完了条件とする。
 
 ここでの「定期」は、ユーザーの依頼ごとにこのサイクルを実行する意味であり、時刻に基づく自動起動を意味しない。実時間で自動実行する場合は、別途 Codex を起動するスケジューラを構成する。
 
@@ -78,9 +78,9 @@ yarn start
 
 ## Subagent の成果物
 
-- Project-local Agent system は、最終判断者から与えられた Project goal に対して、improvement-proposer がリポジトリと公開ニーズから根拠付きの IDP 機会候補を調査し、Product Owner が候補を小さな製品成果へ決定して GitHub Issue 化する。Project Manager はその Issue を起点に実装・品質レビュー・製品レビューまでを完結させる。Product Reviewer の発見は次サイクルの improvement-proposer と Product Owner の入力とする。center への逐次報告や、人間による製品採否・製品レビューはこのサイクルに含めない。
-- Product Owner、Project Manager、Product Reviewer を含むすべての Project-local Subagent は、sandbox 内でゴール達成に必要な調査、ファイル変更、検証、設定、連携を自律的に行う。役割の境界は操作権限ではなく、判断・実装・検証の責務を表す。
-- `.codex/agents/` の custom agent を使った場合、担当 agent または Project Manager は各最終成果物を Markdown として `docs/ai/output/<agent-name>/` に保存する。
+- Project-local Agent system は、最終判断者から与えられた Project goal に対して、Product Owner がリポジトリと公開ニーズから根拠付きの IDP 機会を発見し、backlog Issue を整備し、今回の運営サイクルで扱う成果群を決定する。Implementer はその判断を起点に実装・検証・PR 公開を行い、Quality Reviewer と Product Reviewer は PR を独立してレビューする。Product Owner はレビュー結果を受けて配達の完了または差し戻しを決定する。Product Reviewer の発見は次サイクルの Product Owner の入力とする。center への逐次報告や、人間による製品採否・製品レビューはこのサイクルに含めない。
+- Product Owner、Implementer、Quality Reviewer、Product Reviewer を含むすべての Project-local Subagent は、sandbox 内でゴール達成に必要な調査、ファイル変更、検証、設定、連携を自律的に行う。役割の境界は操作権限ではなく、判断・実装・検証の責務を表す。
+- `.codex/agents/` の custom agent を使った場合、担当 agent または Product Owner は各最終成果物を Markdown として `docs/ai/output/<agent-name>/` に保存する。
 - ファイル名は `NNN-<内容を表すkebab-case名>.md` とし、`NNN` は agent ごとに `001` から始まる 3 桁の連番とする。
 - 保存前に対象ディレクトリを確認し、既存の最大番号に 1 を加える。既存ファイルを上書きしない。
 - `<agent-name>` には nickname ではなく custom agent の `name` を使う。

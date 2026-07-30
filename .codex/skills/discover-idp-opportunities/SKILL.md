@@ -1,11 +1,11 @@
 ---
 name: discover-idp-opportunities
-description: Discover evidence-backed Internal Developer Platform opportunities from repository signals and public user needs. Use when an improvement-proposer or Product Owner needs to research developer or platform-team problems, turn public Backstage and platform-engineering signals into testable hypotheses, or prepare delivery and discovery candidates before product-outcome selection.
+description: Discover evidence-backed Internal Developer Platform opportunities from repository signals and public user needs. Use when a Product Owner needs to research developer or platform-team problems, turn public Backstage and platform-engineering signals into testable hypotheses, create or update delivery and discovery backlog Issues, or prepare candidates for a product operations cycle.
 ---
 
 # IDP 機会を発見する
 
-Bara Developer Platform にとって検証価値のある機会候補を 3〜5 件作り、Product Owner に渡す。機能名を列挙せず、利用者の課題、根拠、期待成果、観測方法から候補を記述する。候補の選定と GitHub Issue の作成は Product Owner の責務とする。
+Bara Developer Platform にとって検証価値のある機会候補を 3〜5 件作り、Product Owner として backlog を整備する。機能名を列挙せず、利用者の課題、根拠、期待成果、観測方法から候補を記述する。根拠が十分な `delivery` / `discovery` 候補は重複確認後に GitHub Issue を作成または更新し、`defer` は候補レポートのみに残す。
 
 ## 前提を固定する
 
@@ -41,17 +41,17 @@ Bara Developer Platform にとって検証価値のある機会候補を 3〜5 �
 - `discovery`: 利用者価値は見込めるが、課題の有無、解法、責務境界のいずれかに重要な不確実性が残る。調べる問いと、その結果により下す判断を定義する。
 - `defer`: 根拠、戦略適合性、観測方法が不足する。実装や Issue 化を勧めない。
 
-同じ課題を扱う既存 GitHub Issue がある場合は URL を記録し、重複候補として明示する。Issue の作成・更新は行わない。
+同じ課題を扱う既存 GitHub Issue がある場合は URL を記録し、重複候補として明示する。`delivery` / `discovery` と判定した新規候補は GitHub Issue を作成し、既存 Issue がある場合は再利用または根拠を更新する。Issue には対象利用者、課題、根拠、期待成果、観測方法、非対象、リスク、`delivery` / `discovery` の区分を記載する。確認済み label のみを使う。
 
 ## 候補レポートを作る
 
-完成版を `docs/ai/output/improvement-proposer/` の次の連番で保存する。次の形式を使う。
+完成版を `docs/ai/output/product-owner/` の次の連番で保存する。次の形式を使う。
 
 ```markdown
-# IDP 機会候補の調査
+# Product Owner の IDP 機会候補・backlog 調査
 
 - 作成日: YYYY-MM-DD
-- Agent: improvement-proposer
+- Agent: product-owner
 - 対象範囲: <調査した製品領域>
 
 ## 根拠
@@ -73,7 +73,7 @@ Bara Developer Platform にとって検証価値のある機会候補を 3〜5 �
 - 既存 Issue:
 - 推奨: delivery / discovery / defer
 
-## Product Owner への引き継ぎ
+## 今回の運営サイクルへの入力
 
-<比較時の論点、Issue 化の推奨、未確認事項>
+<比較時の論点、作成または更新した Issue、優先順位判断のための未確認事項>
 ```
