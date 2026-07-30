@@ -103,6 +103,53 @@ class LocalIdpApi implements IdpApi {
     });
     return clone(execution);
   }
+
+  async getProjectControlContext(projectRef: string) {
+    const now = new Date().toISOString();
+    return {
+      projectRef,
+      project: {
+        ownerRefs: [],
+      },
+      environmentRefs: [],
+      templateRefs: [],
+      allowedActions: {
+        observe: 'allowed' as const,
+        plan: 'allowed' as const,
+        dryRun: 'allowed' as const,
+        proposeChange: 'needs-approval' as const,
+        executeNonProduction: 'needs-approval' as const,
+        executeProduction: 'needs-approval' as const,
+        reasons: [
+          'Local adapter mirrors the backend control context contract for browser verification.',
+        ],
+      },
+      recentOperationLogs: [
+        {
+          id: `local-context-${now}`,
+          operationLogRef: `operation-log:local-context-${now}`,
+          actor: {
+            entityRef: 'user:default/guest',
+            type: 'user' as const,
+          },
+          targetEntityRef: projectRef,
+          eventType: 'plan.created' as const,
+          createdAt: now,
+          status: 'planned' as const,
+          message:
+            'Local contract sample; use BackendIdpApi for mock-free reads.',
+          projectRef,
+        },
+      ],
+      desiredState: {
+        authoritativeSource: 'catalog-and-git' as const,
+        idpBackendStoresAuthoritativeDesiredState: false as const,
+        notes: [
+          'Project, Environment, and Template desired state remains owned by Catalog/Git.',
+        ],
+      },
+    };
+  }
 }
 
 export const idpApi: IdpApi = new LocalIdpApi();

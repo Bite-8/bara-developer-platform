@@ -136,3 +136,102 @@ export type IdpOperationLog = {
   actor: string;
   createdAt: string;
 };
+
+export type IdpRuntimeStatus =
+  | 'proposed'
+  | 'planned'
+  | 'needs-approval'
+  | 'approved'
+  | 'denied'
+  | 'dry-run-running'
+  | 'dry-run-succeeded'
+  | 'dry-run-failed'
+  | 'running'
+  | 'succeeded'
+  | 'failed'
+  | 'cancelled';
+
+export type IdpPolicyDecision = {
+  result: 'allow' | 'deny' | 'needs-approval';
+  reasons: string[];
+  requiredApprovalRefs?: string[];
+};
+
+export type IdpRiskSummary = {
+  level: 'low' | 'medium' | 'high' | 'critical' | 'unknown';
+  summary: string;
+  factors: string[];
+};
+
+export type IdpControlOperationLog = {
+  id: string;
+  operationLogRef: string;
+  actor: {
+    entityRef: string;
+    type: 'user' | 'group' | 'service' | 'agent';
+  };
+  targetEntityRef: string;
+  eventType:
+    | 'intent.created'
+    | 'plan.created'
+    | 'policy.evaluated'
+    | 'approval.requested'
+    | 'approval.recorded'
+    | 'dry-run.started'
+    | 'dry-run.completed'
+    | 'execution.started'
+    | 'execution.completed'
+    | 'external-reference.linked';
+  createdAt: string;
+  status: IdpRuntimeStatus;
+  message: string;
+  projectRef?: string;
+  environmentRef?: string;
+  templateRef?: string;
+  planRef?: string;
+  actionRunRef?: string;
+  riskSummary?: IdpRiskSummary;
+  policyDecision?: IdpPolicyDecision;
+};
+
+export type IdpProjectControlContext = {
+  projectRef: string;
+  project: {
+    title?: string;
+    ownerRefs: string[];
+    catalogEntityRef?: string;
+  };
+  environmentRefs: string[];
+  templateRefs: string[];
+  allowedActions: {
+    observe: 'allowed';
+    plan: 'allowed' | 'needs-approval' | 'denied';
+    dryRun: 'allowed' | 'needs-approval' | 'denied';
+    proposeChange: 'allowed' | 'needs-approval' | 'denied';
+    executeNonProduction: 'allowed' | 'needs-approval' | 'denied';
+    executeProduction: 'allowed' | 'needs-approval' | 'denied';
+    reasons: string[];
+  };
+  recentOperationLogs: IdpControlOperationLog[];
+  latestPlan?: {
+    planRef: string;
+    status: IdpRuntimeStatus;
+    expectedChangeSummary: string;
+    riskSummary?: IdpRiskSummary;
+    policyDecision?: IdpPolicyDecision;
+  };
+  latestActionRun?: {
+    actionRunRef: string;
+    status: IdpRuntimeStatus;
+    mode: 'dry-run' | 'execute';
+    externalExecutionRef?: string;
+    resultSummary?: string;
+    riskSummary?: IdpRiskSummary;
+    policyDecision?: IdpPolicyDecision;
+  };
+  desiredState: {
+    authoritativeSource: 'catalog-and-git';
+    idpBackendStoresAuthoritativeDesiredState: false;
+    notes: string[];
+  };
+};

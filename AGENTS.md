@@ -49,6 +49,7 @@ Backstage の生成アプリを土台にしつつ、IDP 独自機能はできる
 3. `project-manager` が `implementer`、`quality-reviewer`、`product-reviewer` を通じて、実装、検証、必要な修正、独立した品質レビュー、製品レビューまでを完結させる。
 4. 各 agent は、最終成果物を `docs/ai/output/<agent-name>/` に保存する。
 5. 開発対象は Backstage の plugin / module / extension 方針を守り、`packages/app` と `packages/backend` の変更は必要最小限の配線に留める。
+6. 変更があるサイクルでは、Project Manager は成果物と実装を意図的に commit して remote へ push し、base branch に対する通常の GitHub Pull Request を作成する。Draft PR は用いない。PR には変更内容、利用者・開発者への影響、実行した検証、残余リスクを記載し、PR URL を Project Manager の最終成果物に残す。PR 作成までをサイクル完了条件とする。
 
 ここでの「定期」は、ユーザーの依頼ごとにこのサイクルを実行する意味であり、時刻に基づく自動起動を意味しない。実時間で自動実行する場合は、別途 Codex を起動するスケジューラを構成する。
 

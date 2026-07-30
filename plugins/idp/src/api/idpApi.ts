@@ -1,6 +1,7 @@
 import {
   IdpEnvironment,
   IdpOperationLog,
+  IdpProjectControlContext,
   IdpProject,
   IdpTemplate,
   IdpTemplateExecution,
@@ -33,4 +34,7 @@ export type IdpApi = {
     templateId?: string;
   }): Promise<IdpTemplateExecution[]>;
   executeTemplate(input: TemplateExecutionInput): Promise<IdpTemplateExecution>;
+  getProjectControlContext(
+    projectRef: string,
+  ): Promise<IdpProjectControlContext>;
 };
