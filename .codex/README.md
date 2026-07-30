@@ -16,10 +16,10 @@
 ## 開発サイクル
 
 1. `product-owner` は `$discover-idp-opportunities` を使い、リポジトリと公開ニーズから根拠付きの IDP 機会候補を調査し、delivery / discovery 候補を backlog Issue として作成または更新する。
-2. `product-owner` は `$select-product-outcome` を使い、候補と既存 backlog を比較し、今回の運営サイクルの対象成果群、優先順位、受入条件、非対象、リスク、成果仮説を決定する。
-3. `implementer` が各配達単位を実装・検証し、commit、push、通常 PR の作成と実装成果物の保存を行う。
-4. `quality-reviewer` が同じ PR を独立レビューする。blocking finding は Product Owner が Implementer へ差し戻し、再レビューする。
-5. `product-reviewer` が品質を通過した PR を製品観点でレビューする。
+2. `product-owner` は `$select-product-outcome` を使い、候補と既存 backlog を比較し、今回の運営サイクルの対象成果群、優先順位、受入条件、再現可能な動作確認計画、非対象、リスク、成果仮説を決定する。
+3. `implementer` が各配達単位を実装・検証し、受入条件ごとの Review guide、commit、push、通常 PR の作成と実装成果物の保存を行う。
+4. `quality-reviewer` が同じ PR を独立レビューし、PR head で受入条件を再現する。blocking finding または未検証の重要条件は Product Owner が Implementer へ差し戻し、再レビューする。
+5. `product-reviewer` が品質を通過した PR を、実行中の UI / API による受入条件の観測を含む製品観点でレビューする。
 6. `product-owner` はレビュー結果をもとに、各配達単位の完了、修正、分割、保留を決め、運営サイクル記録と backlog を更新する。Product Reviewer の発見は次サイクルの Product Owner の入力になる。
 
 center への逐次報告は行いません。center と最終判断者は Git 履歴、検証証跡、`docs/ai/output/`、未解決事項を後から観測します。最終判断者と center はこのサイクルの製品レビュー担当ではありません。

@@ -25,10 +25,13 @@ Implementation principles:
 - Keep packages/app and packages/backend changes limited to wiring, registration, and configuration connection.
 - Put IDP-specific product/domain logic under plugins/ unless the selected outcome establishes a different boundary.
 - Keep the work item focused while completing all changes required by its acceptance conditions.
-- Before requesting review, intentionally stage only the delivery-unit changes, commit them, push the branch, and create a normal GitHub Pull Request. The PR body must state the change, impact, validation, and residual risks.
+- Derive a reviewable verification plan before implementation. For every acceptance condition, identify the fixture or precondition, user operation or API request, expected result, automated check, and manual reviewer procedure.
+- Add or update focused tests with the change. UI work must cover a representative user journey with Playwright when practical; backend/API work must cover the normal path and material rejection or boundary behavior.
+- Start the relevant app and backend services, then exercise the changed UI or API rather than treating an open port as proof of behavior. Use only safe local fixtures and record any unavailable dependency precisely.
+- Before requesting review, intentionally stage only the delivery-unit changes, commit them, push the branch, and create a normal GitHub Pull Request. The PR body must state the change, impact, validation, residual risks, and a Review guide that lets a reviewer reproduce each acceptance condition from the PR head.
 
 Completion artifact:
 - Save a complete Japanese Markdown artifact under docs/ai/output/implementer/ using the next available sequence number.
-- Include title, creation date, agent name, Product Owner cycle decision artifact, implemented scope, changed files, acceptance-condition evidence, validation results, Pull Request URL, residual risks, and handoff to the Quality Reviewer and Product Owner.
+- Include title, creation date, agent name, Product Owner cycle decision artifact, implemented scope, changed files, an acceptance-condition verification matrix, validation results, Pull Request URL, residual risks, and handoff to the Quality Reviewer and Product Owner.
 - Do not include raw command logs or sensitive values.
 """

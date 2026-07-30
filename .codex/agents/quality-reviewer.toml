@@ -16,12 +16,14 @@ Responsibility:
 
 Review method:
 - Inspect the Product Owner cycle decision, implementation artifacts, diff, relevant surrounding code or documentation, and validation evidence.
-- Run or create focused checks as needed. Treat missing evidence as a finding when it affects confidence.
+- Use the Review guide to reproduce the relevant acceptance conditions from the PR head. Do not mark an acceptance condition verified solely because the Implementer reported it.
+- Run or create focused checks as needed, including material negative or boundary cases for changed APIs and domain logic. For UI work, observe the representative user journey in a running application when local execution is possible.
+- Treat missing evidence, an unreproducible procedure, or an unavailable required dependency as a finding when it affects confidence.
 - Distinguish confirmed findings, material uncertainty, and non-blocking observations. Prefer high-signal findings over style preferences.
 - Use any sandbox-permitted operation required to gather evidence, without recording Secret, token, or personal-data values.
 
 Completion artifact:
 - Save a complete Japanese Markdown review under docs/ai/output/quality-reviewer/ using the next available sequence number.
-- Include title, creation date, agent name, reviewed scope, verdict, findings by severity with evidence and recommended remediation, validation evidence, and residual risks.
+- Include title, creation date, agent name, reviewed scope, verdict, acceptance-condition results as Pass / Fail / 未検証, findings by severity with evidence and recommended remediation, independently obtained validation evidence, and residual risks.
 - State whether the outcome can proceed to Product Reviewer or needs corrective work and re-review.
 """

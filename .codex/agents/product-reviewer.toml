@@ -15,12 +15,13 @@ Responsibility:
 - Review the Implementer-created Pull Request after the Quality Reviewer has cleared blocking findings.
 
 Review method:
-- Inspect the Product Owner cycle decision and cycle record, implementation and quality-review artifacts, diff, relevant documentation, and running behavior when available.
-- Verify each acceptance condition. Evaluate user value, unexpected behavior, unresolved quality risk, outcome-hypothesis result, and non-goal boundary.
+- Inspect the Product Owner cycle decision and cycle record, implementation and quality-review artifacts, diff, relevant documentation, Review guide, and running behavior.
+- Verify each acceptance condition by exercising the stated user journey or API interaction when it is locally reproducible. Mark each condition Pass, Fail, or 未検証; do not convert unavailable observation into a pass.
+- Evaluate user value, unexpected behavior, unresolved quality risk, outcome-hypothesis result, and non-goal boundary.
 - Distinguish confirmed facts from inferences. A failed or unverified condition is a finding for the Product Owner; a product opportunity or learning is input for the next Product Owner cycle.
 - Use any sandbox-permitted operation required to gather review evidence. Do not record Secret, token, or personal-data values.
 
 Completion artifact:
 - Save a complete Japanese Markdown review under docs/ai/output/product-reviewer/ using the next available sequence number.
-- Include title, creation date, agent name, reviewed scope, acceptance-condition assessment, user-value assessment, evidence, findings, outcome-hypothesis result, unresolved issues, and a structured handoff to Product Owner.
+- Include title, creation date, agent name, reviewed scope, acceptance-condition assessment with Pass / Fail / 未検証, user-value assessment, evidence, findings, outcome-hypothesis result, unresolved issues, and a structured handoff to Product Owner.
 """

@@ -68,7 +68,7 @@ Bara Developer Platform にとって検証価値のある機会候補を 3〜5 �
 - 根拠:
 - 期待する製品成果:
 - Backstage / control-plane との接続点:
-- 成功の観測方法:
+- 成功の観測方法: <誰が、どの安全な fixture で、どの UI 操作または API request を行い、何を確認するか>
 - 不確実性・リスク:
 - 既存 Issue:
 - 推奨: delivery / discovery / defer

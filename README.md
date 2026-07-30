@@ -41,7 +41,7 @@ AI-native developer control plane の MVP を定義し、その最小の実装�
 - [最新の製品レビュー](docs/reviews/2026-06-16-product-review-v2-ai-native-control-plane.md)
 - [Project-local agent の成果物](docs/ai/output/README.md)
 
-詳細な開発方法は [開発ガイド](docs/how-to-develop.md) を参照してください。
+詳細な開発方法は [開発ガイド](docs/how-to-develop.md)、変更のレビューと動作確認は [レビュー・動作確認ガイド](docs/how-to-review-and-verify.md) を参照してください。
 
 ## ローカル開発
 

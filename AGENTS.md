@@ -42,16 +42,27 @@ Backstage の生成アプリを土台にしつつ、IDP 独自機能はできる
 
 ## 定期実行トリガー
 
-ユーザーが「定期実行して」「開発サイクルを実行して」、または同等の意図を示した場合、これは Bara Developer Platform の次の自律製品運営サイクルを開始する Project goal として扱う。追加の確認は不要とし、Product Owner は利用可能な証跡から今回の対象成果群を選び、必要な delivery / discovery / maintenance を完結まで進める。運営サイクルは単一機能や単一 Issue に固定しない。対象はゼロ件、1 件、または複数件とし、各対象は独立して検証・公開可能な配達単位に分ける。
+ユーザーが「定期実行して」「開発サイクルを実行して」「開発を進めて」、または同等の意図を示した場合、これは Bara Developer Platform の次の自律製品運営サイクルを開始する Project goal として扱う。追加の確認は不要とし、Product Owner は利用可能な証跡から今回の対象成果群を選び、必要な delivery / discovery / maintenance を完結まで進める。運営サイクルは単一機能や単一 Issue に固定しない。対象はゼロ件、1 件、または複数件とし、各対象は独立して検証・公開可能な配達単位に分ける。
 
 1. `product-owner` を用い、`$discover-idp-opportunities` に従って、リポジトリの現状、既存の成果物・レビュー、GitHub Issue、公開されたユーザーニーズを調査し、根拠付き候補を backlog Issue として作成または更新する。
-2. `product-owner` を用い、`$select-product-outcome` に従って候補と既存 backlog を比較し、今回の運営サイクルで扱う成果群、優先順位、受入条件、非対象、成果仮説を決定する。Product Owner は製品・UI・技術上のトレードオフを決定する唯一の役割とする。
-3. `product-owner` が `implementer`、`quality-reviewer`、`product-reviewer` を直接用いて、各配達単位を完結させる。Implementer は実装、検証、通常 PR の作成、レビュー指摘への修正を担い、Quality Reviewer と Product Reviewer は同じ PR を独立したレビュー対象として扱う。Product Owner はレビュー結果を受けて、継続、差し戻し、分割、保留を判断する。
+2. `product-owner` を用い、`$select-product-outcome` に従って候補と既存 backlog を比較し、今回の運営サイクルで扱う成果群、優先順位、受入条件、非対象、成果仮説を決定する。各受入条件には、前提データ、操作または request、期待結果、自動検証、独立 reviewer の観測方法を対応付ける。Product Owner は製品・UI・技術上のトレードオフを決定する唯一の役割とする。
+3. `product-owner` が `implementer`、`quality-reviewer`、`product-reviewer` を直接用いて、各配達単位を完結させる。Implementer は実装、検証、通常 PR の作成、レビュー指摘への修正を担い、Quality Reviewer と Product Reviewer は同じ PR を独立したレビュー対象として扱う。Product Owner はレビュー結果を受けて、継続、差し戻し、分割、保留を判断する。受入条件を再現できない場合は成功扱いにせず、未検証理由と再現に必要な次の作業を記録して判断する。
 4. 各 agent は、最終成果物を `docs/ai/output/<agent-name>/` に保存する。
 5. 開発対象は Backstage の plugin / module / extension 方針を守り、`packages/app` と `packages/backend` の変更は必要最小限の配線に留める。
-6. 変更がある配達単位では、Implementer は成果物と実装を意図的に commit して remote へ push し、base branch に対する通常の GitHub Pull Request を作成する。Draft PR は用いない。PR には変更内容、利用者・開発者への影響、実行した検証、残余リスクを記載し、PR URL を Implementer の成果物と Product Owner の運営サイクル成果物に残す。PR 作成までを配達単位の完了条件とする。
+6. 変更がある配達単位では、Implementer は成果物と実装を意図的に commit して remote へ push し、base branch に対する通常の GitHub Pull Request を作成する。Draft PR は用いない。PR には変更内容、利用者・開発者への影響、実行した検証、残余リスクに加え、受入条件ごとの再現手順と期待結果を含む Review guide を記載し、PR URL を Implementer の成果物と Product Owner の運営サイクル成果物に残す。PR 作成までを配達単位の完了条件とする。
 
 ここでの「定期」は、ユーザーの依頼ごとにこのサイクルを実行する意味であり、時刻に基づく自動起動を意味しない。実時間で自動実行する場合は、別途 Codex を起動するスケジューラを構成する。
+
+## レビューと動作確認の契約
+
+変更を伴う delivery unit は、レビュー担当者が PR head から再現可能な動作確認計画を持たなければならない。詳細な形式、環境準備、証跡の扱いは `docs/how-to-review-and-verify.md` を参照する。
+
+- 各受入条件を ID で管理し、前提データ、操作または API request、期待結果、自動検証、手動レビュー方法を対応付ける。
+- UI を変更する場合は、対象利用者が行う主要導線を少なくとも一つ定義し、可能な限り Playwright E2E test で自動化する。自動化できない場合は、理由と手動再現手順を PR に残す。
+- backend API または domain logic を変更する場合は、正常系と主要な拒否・境界条件を対象 test または integration test で確認する。
+- 起動確認はプロセスが port を開いたことだけでは足りない。対象の UI 操作または API request が期待結果を返すことまで確認する。
+- Quality Reviewer は Implementer の結果を転載せず、PR の commit を対象に必要な確認を独立して行う。Product Reviewer は動作観測と受入条件を対応付けて Pass / Fail / 未検証を判断する。
+- Secret、token、個人情報、または副作用を伴う本番操作をレビュー手順・fixture・証跡に使わない。外部環境が必要で再現できない場合は、必要な環境と未検証理由を明示する。
 
 ## 変更後の品質確認・起動確認
 
@@ -72,9 +83,14 @@ yarn lint:all
 # 型チェック
 yarn tsc:full
 
+# test 確認
+yarn test --watch=false
+
 # app / backend の起動確認
 yarn start
 ```
+
+UI 導線を変更した場合は、Playwright browser を準備して `yarn test:e2e` も実行する。E2E の browser が未導入なら `yarn exec playwright install chrome --no-shell` を一度実行する。常駐する `yarn start` は readiness と対象導線を確認した後に終了してよい。実行不能または失敗した必須確認は、成功扱いにせず PR と成果物に理由・影響・再現手順を記録する。
 
 ## Subagent の成果物
 

@@ -25,7 +25,7 @@ description: Select, issue, and record the delivery, discovery, or maintenance o
 
 - 対象利用者と利用者価値
 - 解く課題と成果仮説
-- 受入条件と観測方法
+- 受入条件と観測方法。各条件には、安全な fixture / 前提、利用者操作または API request、期待結果、自動検証、独立 reviewer の手動確認方法を持たせる。
 - 非対象、依存関係、主なリスク
 - 学習価値、緊急性、確信度、可逆性、実装規模
 
@@ -75,8 +75,11 @@ description: Select, issue, and record the delivery, discovery, or maintenance o
 
 ### 受入条件
 
-1. <利用者から観測できる条件>
-2. <検証可能な条件>
+| ID   | 受入条件                   | 前提データ・fixture         | 操作または request          | 期待結果         | 自動検証          | Reviewer の観測方法 |
+| ---- | -------------------------- | --------------------------- | --------------------------- | ---------------- | ----------------- | ------------------- |
+| AC-1 | <利用者から観測できる条件> | <安全な sample data / 設定> | <UI 操作または API request> | <観測可能な結果> | <test 種別・対象> | <再現手順>          |
+
+UI を変更する delivery では主要な利用者導線を少なくとも一つ含め、Playwright E2E test を原則とする。backend API / domain logic の delivery では正常系と主要な拒否・境界条件を含める。外部環境が必要で自動化できない場合は、その理由と reviewer が確認可能な代替証跡を明記する。単に「起動する」「test が通る」だけを受入条件にしない。
 
 ### 非対象
 
@@ -99,7 +102,7 @@ description: Select, issue, and record the delivery, discovery, or maintenance o
 
 ## Implementer・Reviewer への引き継ぎ
 
-<各 delivery unit の Issue、受入条件、関連証跡、PR 作成要件、未解決事項>
+<各 delivery unit の Issue、受入条件表、safe fixture、関連証跡、PR Review guide 作成要件、未解決事項>
 ```
 
 決定後は実装方法を詳細化しない。各配達単位の技術的な分解は Implementer が行い、Product Owner は受入条件と優先順位の変更が必要なときだけ判断する。

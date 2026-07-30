@@ -6,6 +6,8 @@
 
 `packages/app` と `packages/backend` は変更禁止ではないが、機能実装の場所ではなく、Backstage アプリへ組み込むための合成・登録・配線の場所として扱う。
 
+実装を PR として配達する際の受入条件、動作確認、独立レビューの手順は [レビュー・動作確認ガイド](how-to-review-and-verify.md) を参照する。
+
 ## `yarn new` の選択ルール
 
 `yarn new` を使う場合は、作りたいものに応じて生成対象を選ぶ。
