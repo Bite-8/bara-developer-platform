@@ -8,8 +8,6 @@ Bara Developer Platform は、Spotify で生まれたオープンソースの [B
 
 IDP の基盤機能を独自に再実装するのではなく、Backstage の Catalog、Scaffolder、Permission、Search、TechDocs、plugin ecosystem を利用します。これにより、Platform team は開発者ポータルそのものの維持や upstream 追従に費やす管理コストを抑え、Bara 固有の価値である安全な自動化、承認、監査、agent 向け control surface に集中できます。
 
-独自機能は Backstage 本体の改造ではなく、原則として plugin / module / extension として実装します。`packages/app` と `packages/backend` は配線層に保ち、業務ロジックやドメイン処理は `plugins/` 配下に閉じます。
-
 ## North Star
 
 開発者が Project と Environment を選ぶと、Bara が Catalog、Template、runtime signal をもとに次の action plan を提示する。必要な承認の後に Scaffolder または Git PR へ接続し、実行結果と audit trail を Project のコンテキストへ戻せる状態を実現する。
