@@ -1,0 +1,4 @@
+interface:
+  display_name: 'IDP 機会の発見'
+  short_description: '根拠から検証すべき IDP の機会を発見する'
+  default_prompt: 'Use $discover-idp-opportunities to find evidence-backed IDP opportunities from the current project context.'
