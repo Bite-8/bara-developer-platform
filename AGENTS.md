@@ -40,6 +40,18 @@ Backstage の生成アプリを土台にしつつ、IDP 独自機能はできる
 
 上記を読んでも判断に必要な証跡が不足する場合は、停止せず、利用可能な証跡から次に検証可能な小さな一歩を選び、未確認事項とリスクを成果物に明記する。
 
+## 定期実行トリガー
+
+ユーザーが「定期実行して」「開発サイクルを実行して」、または同等の意図を示した場合、これは Bara Developer Platform の次の自律製品開発サイクルを開始する Project goal として扱う。追加の確認は不要とし、利用可能な証跡から次に検証可能な小さな製品成果を選び、開発サイクルを完結まで進める。
+
+1. `improvement-proposer` を用い、`$discover-idp-opportunities` に従って、リポジトリの現状、既存の成果物・レビュー、GitHub Issue、公開されたユーザーニーズを調査する。
+2. `product-owner` を用い、`$select-product-outcome` に従って候補を比較し、次の小さな製品成果を選定する。decision-ready な成果は既存 Issue を再利用するか、新規 GitHub Issue として作成する。
+3. `project-manager` が `implementer`、`quality-reviewer`、`product-reviewer` を通じて、実装、検証、必要な修正、独立した品質レビュー、製品レビューまでを完結させる。
+4. 各 agent は、最終成果物を `docs/ai/output/<agent-name>/` に保存する。
+5. 開発対象は Backstage の plugin / module / extension 方針を守り、`packages/app` と `packages/backend` の変更は必要最小限の配線に留める。
+
+ここでの「定期」は、ユーザーの依頼ごとにこのサイクルを実行する意味であり、時刻に基づく自動起動を意味しない。実時間で自動実行する場合は、別途 Codex を起動するスケジューラを構成する。
+
 ## 変更後の品質確認・起動確認
 
 コードを変更した場合は、作業完了前に必ず品質確認と起動確認を行う。
