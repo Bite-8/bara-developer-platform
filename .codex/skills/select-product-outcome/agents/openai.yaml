@@ -1,0 +1,4 @@
+interface:
+  display_name: '製品成果の選定'
+  short_description: '次の小さな製品成果を根拠と仮説から選定し記録するワークフロー'
+  default_prompt: 'Use $select-product-outcome to choose and record the next product outcome from the current Project goal and evidence.'

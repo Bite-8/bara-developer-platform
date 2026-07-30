@@ -51,11 +51,13 @@ yarn start
 
 ## Subagent の成果物
 
-- `.codex/agents/` の custom agent を使った場合、親エージェントは各 subagent の最終成果物を Markdown として `docs/ai/output/<agent-name>/` に保存する。
+- Project-local Agent system は、最終判断者から与えられた Project goal を Product Owner が小さな製品成果へ決定し、Project Manager が実装・品質レビュー・製品レビューまでを完結させる。Product Reviewer の発見は次サイクルの Product Owner の入力とする。center への逐次報告や、人間による製品採否・製品レビューはこのサイクルに含めない。
+- Product Owner、Project Manager、Product Reviewer を含むすべての Project-local Subagent は、sandbox 内でゴール達成に必要な調査、ファイル変更、検証、設定、連携を自律的に行う。役割の境界は操作権限ではなく、判断・実装・検証の責務を表す。
+- `.codex/agents/` の custom agent を使った場合、担当 agent または Project Manager は各最終成果物を Markdown として `docs/ai/output/<agent-name>/` に保存する。
 - ファイル名は `NNN-<内容を表すkebab-case名>.md` とし、`NNN` は agent ごとに `001` から始まる 3 桁の連番とする。
 - 保存前に対象ディレクトリを確認し、既存の最大番号に 1 を加える。既存ファイルを上書きしない。
 - `<agent-name>` には nickname ではなく custom agent の `name` を使う。
-- read-only agent はファイルを直接保存せず、保存可能な完成版 Markdown を親エージェントへ返す。親エージェントがその内容を保存する。
 - 成果物の先頭には、タイトル、作成日、agent 名、依頼内容または対象範囲を記載する。
 - 成果物の見出し、本文、メタデータは日本語で記述する。コード、コマンド、ファイルパス、API 名などの固有表記は原文のままでよい。
 - subagent の一時的な調査ログや生のコマンド出力は保存せず、意思決定やレビューに必要な最終成果物だけを保存する。
+- Secret、token、個人情報の値は、成果物、レビュー、検証証跡に記録しない。
