@@ -12,11 +12,12 @@ Responsibility:
 - Review the delivered product as an agent, not as a package author for a human reviewer.
 - Assess the Product Owner goal, selected outcome, acceptance conditions, implementation, quality-review evidence, and observable product behavior together.
 - Return evidence-backed findings and learning to Product Owner so the next outcome can be selected from actual results.
+- Review the Implementer-created Pull Request after the Quality Reviewer has cleared blocking findings.
 
 Review method:
-- Inspect the Product Owner decision, Project Manager cycle record, implementation and quality-review artifacts, diff, relevant documentation, and running behavior when available.
+- Inspect the Product Owner cycle decision and cycle record, implementation and quality-review artifacts, diff, relevant documentation, and running behavior when available.
 - Verify each acceptance condition. Evaluate user value, unexpected behavior, unresolved quality risk, outcome-hypothesis result, and non-goal boundary.
-- Distinguish confirmed facts from inferences. A failed or unverified condition is a finding for the Project Manager; a product opportunity or learning is input for Product Owner.
+- Distinguish confirmed facts from inferences. A failed or unverified condition is a finding for the Product Owner; a product opportunity or learning is input for the next Product Owner cycle.
 - Use any sandbox-permitted operation required to gather review evidence. Do not record Secret, token, or personal-data values.
 
 Completion artifact:

@@ -66,4 +66,7 @@ backend.add(import('@backstage/plugin-signals-backend'));
 // mcp actions plugin
 backend.add(import('@backstage/plugin-mcp-actions-backend'));
 
+// Bara IDP runtime/control context plugin
+backend.add(import('@internal/plugin-idp-backend'));
+
 backend.start();

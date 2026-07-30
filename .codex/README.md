@@ -1,29 +1,26 @@
 # Codex Project-local Agent System
 
-このディレクトリは、Bara Developer Platform の Project-local な自律製品開発サイクルを定義します。最終判断者は Project goal を与え、Project 内の Agent が次の製品成果の選択から実装、検証、レビュー、次サイクルへの学習までを完結させます。
+このディレクトリは、Bara Developer Platform の Project-local な自律製品運営サイクルを定義します。最終判断者は Project goal を与え、Product Owner が機会発見、backlog、今回の対象成果群の決定、実装、検証、レビュー、次サイクルへの学習を完結させます。運営サイクルは単一機能や単一 Issue に固定しません。
 
 ## 役割と責務
 
-| 役割                   | 主な責務                                                                                          | 入力                                                 | 主な出力                                                   |
-| ---------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------- |
-| `product-owner`        | 根拠付き候補を比較し、decision-ready な成果を GitHub Issue 化したうえで、次の小さな製品成果を選ぶ | Project goal、候補レポート、設計原則、実装、レビュー | GitHub Issue と `docs/ai/output/product-owner/` の決定記録 |
-| `project-manager`      | 決定済み成果を実行可能な単位へ分解し、配達サイクルを完結させる                                    | Product Owner の決定記録                             | `docs/ai/output/project-manager/` のサイクル記録           |
-| `improvement-proposer` | リポジトリと公開ニーズから IDP の機会候補を発見し、根拠を整理する                                 | リポジトリ、レビュー、未解決事項、公開情報           | `docs/ai/output/improvement-proposer/` の候補レポート      |
-| `implementer`          | Project Manager の work item を実装し、検証する                                                   | 実行計画、受入条件                                   | 実装・検証記録                                             |
-| `quality-reviewer`     | 独立して品質・安全性・回帰リスクを検証する                                                        | 決定、実装、検証証跡                                 | 品質レビュー                                               |
-| `product-reviewer`     | 成果と受入条件を製品観点で検証し、次サイクルの学習を返す                                          | 決定、実装、品質証跡、動作観測                       | 製品レビュー                                               |
+| 役割               | 主な責務                                                                                               | 入力                                                     | 主な出力                          |
+| ------------------ | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- | --------------------------------- |
+| `product-owner`    | 機会発見、backlog Issue 化、今回の対象成果群の優先順位とトレードオフの決定、レビュー結果による完了判断 | Project goal、リポジトリ、レビュー、既存 Issue、公開情報 | Issue、運営サイクル決定・完了記録 |
+| `implementer`      | Product Owner が選んだ配達単位を実装・検証し、commit、push、通常 PR の作成まで行う                     | Product Owner の運営サイクル決定、受入条件               | 実装・検証記録、PR                |
+| `quality-reviewer` | Implementer が作成した PR を独立して技術品質・安全性・回帰リスクの観点から検証する                     | Product Owner の決定、PR、実装・検証証跡                 | 品質レビュー                      |
+| `product-reviewer` | Quality Reviewer が通した PR を利用者価値・成果仮説・受入条件の観点から検証する                        | Product Owner の決定、PR、品質証跡、動作観測             | 製品レビューと次サイクルの学び    |
 
-`product-review-packager` は廃止し、`product-reviewer` に置き換えました。人間向けの資料作成ではなく、Agent 自身が成果を検証し、Product Owner へのフィードバックを作ります。
+`improvement-proposer` と `project-manager` は廃止しました。前者の discovery / Issue 化 / 優先順位判断は `product-owner` に統合し、後者の配達進行は Product Owner が直接担います。`product-review-packager` も廃止し、`product-reviewer` に置き換えました。
 
 ## 開発サイクル
 
-1. `improvement-proposer` は `$discover-idp-opportunities` を使い、リポジトリと公開ニーズから根拠付きの IDP 機会候補を調査して保存する。
-2. `product-owner` は候補レポートと `$select-product-outcome` を使い、候補を比較する。decision-ready な成果は重複確認後に GitHub Issue として作成または再利用し、次の製品成果を決定して保存する。
-3. `project-manager` は決定記録に記載された GitHub Issue と受入条件を起点に work item と検証計画を作る。
-4. `implementer` が work item を実装して証跡を保存する。
-5. `quality-reviewer` が独立してレビューする。必要な修正と再レビューは `project-manager` が調整する。
-6. `product-reviewer` が受入条件、実装、品質証跡、動作をレビューする。
-7. `project-manager` はサイクル記録を保存し、`product-reviewer` の発見を次の `improvement-proposer` と `product-owner` の入力としてリンクする。
+1. `product-owner` は `$discover-idp-opportunities` を使い、リポジトリと公開ニーズから根拠付きの IDP 機会候補を調査し、delivery / discovery 候補を backlog Issue として作成または更新する。
+2. `product-owner` は `$select-product-outcome` を使い、候補と既存 backlog を比較し、今回の運営サイクルの対象成果群、優先順位、受入条件、非対象、リスク、成果仮説を決定する。
+3. `implementer` が各配達単位を実装・検証し、commit、push、通常 PR の作成と実装成果物の保存を行う。
+4. `quality-reviewer` が同じ PR を独立レビューする。blocking finding は Product Owner が Implementer へ差し戻し、再レビューする。
+5. `product-reviewer` が品質を通過した PR を製品観点でレビューする。
+6. `product-owner` はレビュー結果をもとに、各配達単位の完了、修正、分割、保留を決め、運営サイクル記録と backlog を更新する。Product Reviewer の発見は次サイクルの Product Owner の入力になる。
 
 center への逐次報告は行いません。center と最終判断者は Git 履歴、検証証跡、`docs/ai/output/`、未解決事項を後から観測します。最終判断者と center はこのサイクルの製品レビュー担当ではありません。
 
