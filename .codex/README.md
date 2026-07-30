@@ -1,223 +1,48 @@
-# Codex Subagents Development Loop
+# Codex Project-local Agent System
 
-This directory defines a small, decision-gated Codex Subagents setup for the Bara Developer Platform repository.
+このディレクトリは、Bara Developer Platform の Project-local な自律製品開発サイクルを定義します。最終判断者は Project goal を与え、Project 内の Agent が次の製品成果の選択から実装、検証、レビュー、次サイクルへの学習までを完結させます。
 
-The goal is to make Codex useful across the full improvement loop while keeping human product judgment and final adoption decisions explicit.
+## 役割と責務
 
-## References and design influences
+| 役割                   | 主な責務                                                                 | 入力                                               | 主な出力                                         |
+| ---------------------- | ------------------------------------------------------------------------ | -------------------------------------------------- | ------------------------------------------------ |
+| `product-owner`        | 次の小さな製品成果を選び、価値・受入条件・非対象・リスク・仮説を決定する | Project goal、設計原則、実装、レビュー、既存成果物 | `docs/ai/output/product-owner/` の決定記録       |
+| `project-manager`      | 決定済み成果を実行可能な単位へ分解し、配達サイクルを完結させる           | Product Owner の決定記録                           | `docs/ai/output/project-manager/` のサイクル記録 |
+| `improvement-proposer` | Product Owner 向けに根拠と候補を整理する                                 | リポジトリ、レビュー、未解決事項                   | 候補・比較レポート                               |
+| `implementer`          | Project Manager の work item を実装し、検証する                          | 実行計画、受入条件                                 | 実装・検証記録                                   |
+| `quality-reviewer`     | 独立して品質・安全性・回帰リスクを検証する                               | 決定、実装、検証証跡                               | 品質レビュー                                     |
+| `product-reviewer`     | 成果と受入条件を製品観点で検証し、次サイクルの学習を返す                 | 決定、実装、品質証跡、動作観測                     | 製品レビュー                                     |
 
-This configuration follows a minimal, project-specific interpretation of common practices seen in community agent and skill libraries such as VoltAgent's Codex/Claude subagent collections, Addy Osmani's engineering agent skills, and product-management skill libraries from Product on Purpose.
+`product-review-packager` は廃止し、`product-reviewer` に置き換えました。人間向けの資料作成ではなく、Agent 自身が成果を検証し、Product Owner へのフィードバックを作ります。
 
-The main ideas borrowed are:
+## 開発サイクル
 
-- clear responsibility boundaries per agent;
-- explicit output formats;
-- scope control before implementation;
-- verification and quality gates;
-- human decision checkpoints before broad changes;
-- review packages that help a human evaluate real product behavior.
+1. `product-owner` は `$select-product-outcome` を使い、Project goal と証跡から次の製品成果を決定して保存する。
+2. `project-manager` は決定記録だけを起点に work item と検証計画を作る。
+3. `implementer` が work item を実装して証跡を保存する。
+4. `quality-reviewer` が独立してレビューする。必要な修正と再レビューは `project-manager` が調整する。
+5. `product-reviewer` が受入条件、実装、品質証跡、動作をレビューする。
+6. `project-manager` はサイクル記録を保存し、`product-reviewer` の発見を次の `product-owner` の入力としてリンクする。
 
-No external agent definition is copied wholesale. The instructions here are tailored to this Backstage-based IDP and its repository policy.
+center への逐次報告は行いません。center と最終判断者は Git 履歴、検証証跡、`docs/ai/output/`、未解決事項を後から観測します。最終判断者と center はこのサイクルの製品レビュー担当ではありません。
 
-## Purpose
+## 自律性
 
-Use these agents to run an iterative development loop:
+すべての Project-local Subagent は sandbox 内でゴール達成に必要な操作を自律的に行います。役割は、操作権限の制限ではなく、判断・実装・検証の観点を分けるものです。不確実性、複数の妥当な戦略、通常の依存関係、役割名、権限確認は停止理由にしません。利用可能な証跡から最善の判断を行い、次の検証可能な一歩を選びます。
 
-1. generate improvement options;
-2. let a human decide what is adopted, rejected, or deferred;
-3. implement only adopted items;
-4. review implementation quality before product review;
-5. package the change for human product review;
-6. feed human review results back into the next proposal cycle.
+Secret、token、個人情報の値は成果物・レビュー・検証証跡に残しません。
 
-## Human and Codex responsibilities
+## 成果物
 
-### Human responsibilities
-
-The human is responsible for:
-
-- deciding whether each proposed improvement is adopted, rejected, or deferred;
-- reviewing the running product after implementation;
-- judging product fit, usability, timing, and trade-offs;
-- deciding whether follow-up work should enter the next loop.
-
-### Codex responsibilities
-
-Codex is responsible for:
-
-- proposing improvements with impact, cost, risk, and decision points;
-- translating accepted decisions into implementable work;
-- implementing only accepted items;
-- reviewing implementation quality, security, regressions, tests, unintended behavior, and maintainability;
-- preparing a product-review package for the human reviewer;
-- turning human product-review feedback into the next set of improvement options.
-
-## Development flow
-
-1. **Codex:** `improvement-proposer` proposes improvement options.
-2. **Human:** decide adopt / reject / defer for each option.
-3. **Codex:** `implementer` implements only adopted options.
-4. **Codex:** `quality-reviewer` reviews the implementation before human product review.
-5. **Codex:** `product-review-packager` prepares human review materials.
-6. **Human:** review the actual product.
-7. **Codex:** `improvement-proposer` uses the human review to propose next improvements.
-8. Return to step 1.
-
-## Agents
-
-### `improvement-proposer`
-
-Use when you want new improvement options from the current repository state, recent changes, known issues, or human review notes.
-
-Responsibilities:
-
-- propose A/B/C-style options plus a hold/defer option;
-- include purpose, expected effect, implementation cost, risk, and decision points;
-- separate evidence from assumptions;
-- request a human decision before implementation;
-- never implement changes.
-
-### `implementer`
-
-Use after the human explicitly accepts one or more options.
-
-Responsibilities:
-
-- implement accepted options only;
-- avoid rejected, deferred, implied, or adjacent work;
-- keep changes minimal and safe;
-- respect this repository's Backstage extension policy;
-- summarize changed files and validation commands.
-
-### `quality-reviewer`
-
-Use after implementation and before human product review.
-
-Responsibilities:
-
-- review for security, bugs, regressions, tests, maintainability, unintended behavior, and performance;
-- assess architecture risk only when relevant;
-- report findings by severity;
-- avoid style-only comments;
-- recommend fixes but never implement them.
-
-### `product-review-packager`
-
-Use after quality review to prepare the human product review.
-
-Responsibilities:
-
-- summarize what changed in product language;
-- list routes, screens, URLs, commands, or files to inspect;
-- provide review steps and a checklist;
-- identify known issues, out-of-scope areas, and decision points;
-- never implement or redesign anything.
-
-## When to spawn which agent
-
-- Spawn `improvement-proposer` at the start of a loop, after a human review, or when prioritization is unclear.
-- Spawn `implementer` only after the human explicitly accepts specific options.
-- Spawn `quality-reviewer` after implementation, before asking the human to review the product.
-- Spawn `product-review-packager` after implementation and quality review, when the human needs a clear review guide.
-
-Avoid spawning multiple agents for the same responsibility at the same time unless their inputs and scopes are clearly different.
-
-## How to invoke agents
-
-Codex does not spawn subagents automatically. Ask for the agent explicitly in the prompt. The custom agent name is the `name` value in each `.codex/agents/*.toml` file.
-
-After adding or changing an agent definition, start a new Codex session so the project-scoped configuration is loaded.
-
-During a CLI session, use `/agent` to inspect or switch to a spawned agent thread. The parent agent should wait for the requested agents and consolidate their results.
-
-Example:
-
-```text
-Use the improvement-proposer subagent to inspect the current repository and propose improvements.
-Do not implement anything. Wait for it to finish, save its final report using the repository output convention, and summarize the saved path.
-```
-
-## Persisting agent outputs
-
-The parent agent persists each subagent's final Markdown report. This is required because read-only agents cannot write files themselves.
-
-Output path:
+各 agent は、最終的に必要な完成版だけを次の規約で保存します。
 
 ```text
 docs/ai/output/<agent-name>/NNN-<descriptive-kebab-case-name>.md
 ```
 
-Rules:
+- agent ごとに `001` から連番にし、既存ファイルを上書きしない。
+- タイトル、作成日、agent 名、対象範囲を先頭に置く。
+- 見出し、本文、メタデータは日本語で記述する。
+- 生のコマンド出力、一時ログ、Secret、token、個人情報は保存しない。
 
-- Use the custom agent `name`, not its display nickname, as the directory name.
-- Number files independently for each agent, starting at `001`.
-- Inspect existing files and use the next number; never overwrite an earlier report.
-- Store the final decision-ready report, not raw exploration logs or full command output.
-- Include a title, creation date, agent name, and request or scope at the top.
-- Write headings, body text, and metadata in Japanese. Preserve code, commands, file paths, API names, and other identifiers in their original form.
-
-Examples:
-
-```text
-docs/ai/output/improvement-proposer/001-catalog-improvement-options.md
-docs/ai/output/implementer/001-adopted-catalog-changes.md
-docs/ai/output/quality-reviewer/001-catalog-change-quality-review.md
-docs/ai/output/product-review-packager/001-catalog-change-review-guide.md
-```
-
-## Prompt examples
-
-### Example 1: propose improvements
-
-```text
-Spawn improvement-proposer.
-Analyze the current repository state, recent changes, and known product direction.
-Do not implement anything.
-Return improvement proposals as A/B/C options with impact, cost, risk, and decision points.
-Wait for my decision.
-Save the final report according to the repository output convention.
-```
-
-### Example 2: implement accepted options only
-
-```text
-Spawn implementer.
-Implement only the options I explicitly accepted:
-- A: <採用内容>
-- C: <採用内容>
-Do not implement rejected or deferred options.
-Keep changes minimal.
-After implementation, summarize changed files and validation commands.
-Save the final report according to the repository output convention.
-```
-
-### Example 3: quality review
-
-```text
-Spawn quality-reviewer.
-Review the latest implementation before human product review.
-Focus on security, bugs, regressions, tests, maintainability, unintended behavior, and performance.
-Do not edit code.
-Return findings by severity with evidence and recommended fixes.
-Save the final report according to the repository output convention.
-```
-
-### Example 4: package for human review
-
-```text
-Spawn product-review-packager.
-Prepare a review package for a human product reviewer.
-Include what changed, where to look, how to verify, known issues, screenshots/URLs if available, and decision points.
-Do not edit code.
-Save the final report according to the repository output convention.
-```
-
-## Notes and guardrails
-
-- Human adoption is required before implementation.
-- Rejected or deferred ideas must not be implemented implicitly.
-- Keep this repository's Backstage policy in mind: custom IDP behavior should generally live in `plugins/`, while `packages/app` and `packages/backend` should stay focused on wiring and registration.
-- Prefer small, reversible changes over broad rewrites.
-- Quality review is not a replacement for human product review.
-- Product-review packaging should make the review easier, not decide the outcome.
-- If the implementation scope becomes ambiguous, stop and ask for a decision instead of expanding the work.
+Agent 定義を追加・変更した後は、新しい Codex session で project-scoped configuration を読み込む。
