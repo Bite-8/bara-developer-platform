@@ -1,22 +1,23 @@
 # Codex Project-local Agent System
 
-このディレクトリは、Bara Developer Platform の Project-local な自律製品運営サイクルを定義します。最終判断者は Project goal を与え、Product Owner が機会発見、backlog、今回の対象成果群の決定、実装、検証、レビュー、次サイクルへの学習を完結させます。運営サイクルは単一機能や単一 Issue に固定しません。
+このディレクトリは、Bara Developer Platform の Project-local な自律製品運営サイクルを定義します。最終判断者は Project goal を与え、Opportunity Proposer が機会と backlog を発見し、Product Owner が今回の対象成果群を決定し、実装、検証、レビュー、次サイクルへの学習を完結させます。運営サイクルは単一機能や単一 Issue に固定しません。
 
 ## 役割と責務
 
-| 役割               | 主な責務                                                                                               | 入力                                                     | 主な出力                          |
-| ------------------ | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- | --------------------------------- |
-| `product-owner`    | 機会発見、backlog Issue 化、今回の対象成果群の優先順位とトレードオフの決定、レビュー結果による完了判断 | Project goal、リポジトリ、レビュー、既存 Issue、公開情報 | Issue、運営サイクル決定・完了記録 |
-| `implementer`      | Product Owner が選んだ配達単位を実装・検証し、commit、push、通常 PR の作成まで行う                     | Product Owner の運営サイクル決定、受入条件               | 実装・検証記録、PR                |
-| `quality-reviewer` | Implementer が作成した PR を独立して技術品質・安全性・回帰リスクの観点から検証する                     | Product Owner の決定、PR、実装・検証証跡                 | 品質レビュー                      |
-| `product-reviewer` | Quality Reviewer が通した PR を利用者価値・成果仮説・受入条件の観点から検証する                        | Product Owner の決定、PR、品質証跡、動作観測             | 製品レビューと次サイクルの学び    |
+| 役割                   | 主な責務                                                                             | 入力                                                                   | 主な出力                         |
+| ---------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- | -------------------------------- |
+| `opportunity-proposer` | 実行中の製品・ユーザーニーズ・公開情報を探索し、UI / 機能 / 連携候補を Issue 化する  | Project goal、実行中の app、リポジトリ、レビュー、既存 Issue、公開情報 | 候補 Issue、探索・backlog 成果物 |
+| `product-owner`        | backlog の優先順位、今回の対象成果群とトレードオフの決定、レビュー結果による完了判断 | Proposer 成果物、backlog、リポジトリ、レビュー                         | 運営サイクル決定・完了記録       |
+| `implementer`          | Product Owner が選んだ配達単位を実装・検証し、commit、push、通常 PR の作成まで行う   | Product Owner の運営サイクル決定、受入条件                             | 実装・検証記録、PR               |
+| `quality-reviewer`     | Implementer が作成した PR を独立して技術品質・安全性・回帰リスクの観点から検証する   | Product Owner の決定、PR、実装・検証証跡                               | 品質レビュー                     |
+| `product-reviewer`     | Quality Reviewer が通した PR を利用者価値・成果仮説・受入条件の観点から検証する      | Product Owner の決定、PR、品質証跡、動作観測                           | 製品レビューと次サイクルの学び   |
 
-`improvement-proposer` と `project-manager` は廃止しました。前者の discovery / Issue 化 / 優先順位判断は `product-owner` に統合し、後者の配達進行は Product Owner が直接担います。`product-review-packager` も廃止し、`product-reviewer` に置き換えました。
+`improvement-proposer` と `project-manager` は廃止しました。前者に代わり、候補発見と Issue 化だけを担い、採否を決めない `opportunity-proposer` を採用します。後者の配達進行は Product Owner が直接担います。`product-review-packager` も廃止し、`product-reviewer` に置き換えました。
 
 ## 開発サイクル
 
-1. `product-owner` は `$discover-idp-opportunities` を使い、リポジトリと公開ニーズから根拠付きの IDP 機会候補を調査し、delivery / discovery 候補を backlog Issue として作成または更新する。
-2. `product-owner` は `$select-product-outcome` を使い、候補と既存 backlog を比較し、今回の運営サイクルの対象成果群、優先順位、受入条件、再現可能な動作確認計画、非対象、リスク、成果仮説を決定する。
+1. `opportunity-proposer` は `$discover-idp-opportunities` を使い、実行中の app、リポジトリ、公開ニーズから UI / UX、機能、連携の候補を調査し、delivery / discovery candidate を backlog Issue として作成または更新する。
+2. `product-owner` は `$select-product-outcome` を使い、Proposer の候補と既存 backlog を比較し、今回の運営サイクルの対象成果群、優先順位、受入条件、再現可能な動作確認計画、非対象、リスク、成果仮説を決定する。
 3. `implementer` が各配達単位を実装・検証し、受入条件ごとの Review guide、commit、push、通常 PR の作成と実装成果物の保存を行う。
 4. `quality-reviewer` が同じ PR を独立レビューし、PR head で受入条件を再現する。blocking finding または未検証の重要条件は Product Owner が Implementer へ差し戻し、再レビューする。
 5. `product-reviewer` が品質を通過した PR を、実行中の UI / API による受入条件の観測を含む製品観点でレビューする。

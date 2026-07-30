@@ -1,6 +1,6 @@
 # Subagent Outputs
 
-Codex custom agents の最終成果物を agent ごとに保存します。Project-local の自律製品運営サイクルでは、Product Owner の discovery・backlog・優先順位・完了判断、Implementer の PR、品質レビュー、製品レビューを後から追跡できる完成版だけを保存します。
+Codex custom agents の最終成果物を agent ごとに保存します。Project-local の自律製品運営サイクルでは、Opportunity Proposer の探索・backlog、Product Owner の優先順位・完了判断、Implementer の PR、品質レビュー、製品レビューを後から追跡できる完成版だけを保存します。
 
 ```text
 docs/ai/output/<agent-name>/NNN-<descriptive-kebab-case-name>.md

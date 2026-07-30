@@ -36,16 +36,16 @@ Backstage の生成アプリを土台にしつつ、IDP 独自機能はできる
 - `docs/adr/0002-ai-action-approval-boundary.md`: AI action、approval、permission、audit の境界を確認する。
 - `docs/backstage-extension-policy.md`: Backstage 拡張時の plugin / module / extension 方針を確認する。
 - `docs/reviews/`: 直近の製品レビュー、未解決事項、次サイクルへの学習を確認する。
-- `docs/ai/output/`: 既存の agent 成果物がある場合、Product Owner / Implementer / Quality Reviewer / Product Reviewer の最新成果物を優先して確認する。
+- `docs/ai/output/`: 既存の agent 成果物がある場合、Opportunity Proposer / Product Owner / Implementer / Quality Reviewer / Product Reviewer の最新成果物を優先して確認する。
 
 上記を読んでも判断に必要な証跡が不足する場合は、停止せず、利用可能な証跡から次に検証可能な小さな一歩を選び、未確認事項とリスクを成果物に明記する。
 
 ## 定期実行トリガー
 
-ユーザーが「定期実行して」「開発サイクルを実行して」「開発を進めて」、または同等の意図を示した場合、これは Bara Developer Platform の次の自律製品運営サイクルを開始する Project goal として扱う。追加の確認は不要とし、Product Owner は利用可能な証跡から今回の対象成果群を選び、必要な delivery / discovery / maintenance を完結まで進める。運営サイクルは単一機能や単一 Issue に固定しない。対象はゼロ件、1 件、または複数件とし、各対象は独立して検証・公開可能な配達単位に分ける。
+ユーザーが「定期実行して」「開発サイクルを実行して」「開発を進めて」、または同等の意図を示した場合、これは Bara Developer Platform の次の自律製品運営サイクルを開始する Project goal として扱う。追加の確認は不要とし、Opportunity Proposer が候補を発見・Issue 化し、Product Owner は backlog から今回の対象成果群を選び、必要な delivery / discovery / maintenance を完結まで進める。運営サイクルは単一機能や単一 Issue に固定しない。対象はゼロ件、1 件、または複数件とし、各対象は独立して検証・公開可能な配達単位に分ける。
 
-1. `product-owner` を用い、`$discover-idp-opportunities` に従って、リポジトリの現状、既存の成果物・レビュー、GitHub Issue、公開されたユーザーニーズを調査し、根拠付き候補を backlog Issue として作成または更新する。
-2. `product-owner` を用い、`$select-product-outcome` に従って候補と既存 backlog を比較し、今回の運営サイクルで扱う成果群、優先順位、受入条件、非対象、成果仮説を決定する。各受入条件には、前提データ、操作または request、期待結果、自動検証、独立 reviewer の観測方法を対応付ける。Product Owner は製品・UI・技術上のトレードオフを決定する唯一の役割とする。
+1. `opportunity-proposer` を用い、`$discover-idp-opportunities` に従って、実行中の app の UI / API 導線、リポジトリ、既存の成果物・レビュー、GitHub Issue、公開されたユーザーニーズを調査する。Proposer は根拠のある UI / UX・機能・外部連携・ライブラリ導入候補を重複確認後に backlog Issue として作成または更新する。Issue 化は実装決定ではない。
+2. `product-owner` を用い、`$select-product-outcome` に従って Proposer の成果物、候補 Issue、既存 backlog を比較し、今回の運営サイクルで扱う成果群、優先順位、受入条件、非対象、成果仮説を決定する。各受入条件には、前提データ、操作または request、期待結果、自動検証、独立 reviewer の観測方法を対応付ける。Product Owner は製品・UI・技術上のトレードオフを決定する唯一の役割とする。
 3. `product-owner` が `implementer`、`quality-reviewer`、`product-reviewer` を直接用いて、各配達単位を完結させる。Implementer は実装、検証、通常 PR の作成、レビュー指摘への修正を担い、Quality Reviewer と Product Reviewer は同じ PR を独立したレビュー対象として扱う。Product Owner はレビュー結果を受けて、継続、差し戻し、分割、保留を判断する。受入条件を再現できない場合は成功扱いにせず、未検証理由と再現に必要な次の作業を記録して判断する。
 4. 各 agent は、最終成果物を `docs/ai/output/<agent-name>/` に保存する。
 5. 開発対象は Backstage の plugin / module / extension 方針を守り、`packages/app` と `packages/backend` の変更は必要最小限の配線に留める。
@@ -94,8 +94,8 @@ UI 導線を変更した場合は、Playwright browser を準備して `yarn tes
 
 ## Subagent の成果物
 
-- Project-local Agent system は、最終判断者から与えられた Project goal に対して、Product Owner がリポジトリと公開ニーズから根拠付きの IDP 機会を発見し、backlog Issue を整備し、今回の運営サイクルで扱う成果群を決定する。Implementer はその判断を起点に実装・検証・PR 公開を行い、Quality Reviewer と Product Reviewer は PR を独立してレビューする。Product Owner はレビュー結果を受けて配達の完了または差し戻しを決定する。Product Reviewer の発見は次サイクルの Product Owner の入力とする。center への逐次報告や、人間による製品採否・製品レビューはこのサイクルに含めない。
-- Product Owner、Implementer、Quality Reviewer、Product Reviewer を含むすべての Project-local Subagent は、sandbox 内でゴール達成に必要な調査、ファイル変更、検証、設定、連携を自律的に行う。役割の境界は操作権限ではなく、判断・実装・検証の責務を表す。
+- Project-local Agent system は、最終判断者から与えられた Project goal に対して、Opportunity Proposer が実行中の製品・リポジトリ・公開ニーズから候補を発見し、backlog Issue を整備する。Product Owner は候補から今回の運営サイクルで扱う成果群を決定する。Implementer はその判断を起点に実装・検証・PR 公開を行い、Quality Reviewer と Product Reviewer は PR を独立してレビューする。Product Owner はレビュー結果を受けて配達の完了または差し戻しを決定する。Product Reviewer の発見は次サイクルの Opportunity Proposer と Product Owner の入力とする。center への逐次報告や、人間による製品採否・製品レビューはこのサイクルに含めない。
+- Opportunity Proposer、Product Owner、Implementer、Quality Reviewer、Product Reviewer を含むすべての Project-local Subagent は、sandbox 内でゴール達成に必要な調査、ファイル変更、検証、設定、連携を自律的に行う。役割の境界は、操作権限の制限ではなく、探索・製品判断・実装・検証の責務を表す。
 - `.codex/agents/` の custom agent を使った場合、担当 agent または Product Owner は各最終成果物を Markdown として `docs/ai/output/<agent-name>/` に保存する。
 - ファイル名は `NNN-<内容を表すkebab-case名>.md` とし、`NNN` は agent ごとに `001` から始まる 3 桁の連番とする。
 - 保存前に対象ディレクトリを確認し、既存の最大番号に 1 を加える。既存ファイルを上書きしない。

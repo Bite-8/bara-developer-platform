@@ -5,7 +5,7 @@ description: Select, issue, and record the delivery, discovery, or maintenance o
 
 # 今回の運営サイクルの成果群を選定する
 
-`$discover-idp-opportunities` により Product Owner が整理した根拠付き候補と既存 backlog を、Implementer が PR として配達でき、Product Reviewer が観測できる成果群へ変換する。候補を比較し、今回の運営サイクルに含める delivery / discovery / maintenance の対象をゼロ件、1 件、または複数件選ぶ。運営サイクルを単一機能や単一 Issue に固定しない。
+`$discover-idp-opportunities` により Opportunity Proposer が整理・Issue 化した候補と既存 backlog を、Implementer が PR として配達でき、Product Reviewer が観測できる成果群へ変換する。候補を比較し、今回の運営サイクルに含める delivery / discovery / maintenance の対象をゼロ件、1 件、または複数件選ぶ。運営サイクルを単一機能や単一 Issue に固定しない。
 
 ## 根拠を集める
 
@@ -14,7 +14,7 @@ description: Select, issue, and record the delivery, discovery, or maintenance o
 - Project goal と `AGENTS.md`
 - `docs/product/`、`docs/architecture/`、ADR、`docs/reviews/`
 - 現在の実装、Git 履歴、未解決事項、最近の `docs/ai/output/` 成果物
-- 最新の Product Owner の候補・backlog 調査レポート
+- 最新の Opportunity Proposer の候補・backlog 探索レポート
 - 実装・品質・製品レビューの証跡、既存 Pull Request、および必要なら実際に動かした製品の観測
 
 事実、推論、未確認事項を分ける。証跡が不足していても停止せず、判断を変え得る不確実性だけを記録する。
@@ -35,7 +35,7 @@ description: Select, issue, and record the delivery, discovery, or maintenance o
 
 候補ごとに既存の open / closed GitHub Issue を検索し、同じ利用者課題と期待成果を扱うものがないかを確認する。重複する場合は既存 Issue を再利用し、必要なら根拠と受入条件を補足する。
 
-新規かつ decision-ready な候補に Issue がない場合は、Product Owner が GitHub Issue を作成する。通常は discovery skill により Issue が作成済みなので、その Issue を再利用・更新する。Issue には少なくとも次を記載する。
+新規かつ decision-ready な候補に Issue がない場合は、Product Owner が GitHub Issue を作成する。通常は Opportunity Proposer により Issue が作成済みなので、その Issue を再利用・更新する。Issue には少なくとも次を記載する。
 
 - 対象利用者と解く課題または機会
 - 期待する製品成果と利用者価値
