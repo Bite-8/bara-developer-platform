@@ -13,20 +13,12 @@ export const idpPlugin = createFrontendPlugin({
   extensions: [
     PageBlueprint.make({
       params: {
-        path: '/idp',
+        path: '/idp/*',
         title: 'IDP',
         icon: <DashboardIcon />,
         routeRef: idpRouteRef,
         loader: async () =>
           import('./components/IdpPages').then(m => <m.IdpRoot />),
-      },
-    }),
-    PageBlueprint.make({
-      name: 'project-detail',
-      params: {
-        path: '/idp/projects/:projectId',
-        loader: async () =>
-          import('./components/IdpPages').then(m => <m.IdpProjectDetailRoot />),
       },
     }),
   ],
