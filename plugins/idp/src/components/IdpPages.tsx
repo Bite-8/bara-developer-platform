@@ -1427,3 +1427,13 @@ export const IdpRoot = () => {
     </Page>
   );
 };
+
+export const IdpProjectDetailRoot = () => {
+  const data = useIdpData();
+
+  return (
+    <Page themeId="tool">
+      <ProjectDetailPage {...data} />
+    </Page>
+  );
+};
