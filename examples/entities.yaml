@@ -4,6 +4,9 @@ apiVersion: backstage.io/v1alpha1
 kind: System
 metadata:
   name: examples
+  annotations:
+    bara.dev/environment-ref: resource:default/examples-dev
+    bara.dev/template-ref: template:default/example-nodejs-template
 spec:
   owner: guests
 ---

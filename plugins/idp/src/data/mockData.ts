@@ -9,6 +9,20 @@ import {
 
 export const projects: IdpProject[] = [
   {
+    id: 'examples',
+    name: 'Examples',
+    description:
+      'Safe local Catalog System used to verify backend control context reads.',
+    owner: 'group:default/guests',
+    repositories: [],
+    relatedCatalogEntityRefs: ['system:default/examples'],
+    environmentIds: [],
+    templateIds: ['node-api'],
+    status: 'active',
+    createdAt: '2026-07-31T00:00:00Z',
+    updatedAt: '2026-07-31T00:00:00Z',
+  },
+  {
     id: 'ec-platform',
     name: 'EC Platform',
     description:

@@ -2,6 +2,11 @@ import { PropsWithChildren, useEffect, useMemo, useState } from 'react';
 import { Link, Route, Routes, useParams } from 'react-router-dom';
 import { Content, Header, Page } from '@backstage/core-components';
 import {
+  discoveryApiRef,
+  fetchApiRef,
+  useApi,
+} from '@backstage/core-plugin-api';
+import {
   Box,
   Button,
   Card,
@@ -22,10 +27,14 @@ import GitHubIcon from '@material-ui/icons/GitHub';
 import HistoryIcon from '@material-ui/icons/History';
 import LayersIcon from '@material-ui/icons/Layers';
 import RocketLaunchIcon from '@material-ui/icons/FlightTakeoff';
+import { BackendIdpApi } from '../api/backendIdpApi';
+import { IdpApi } from '../api/idpApi';
 import { idpApi } from '../api/localIdpApi';
 import {
+  IdpControlOperationLog,
   IdpEnvironment,
   IdpOperationLog,
+  IdpProjectControlContext,
   IdpProject,
   IdpTemplate,
   IdpTemplateExecution,
@@ -100,6 +109,11 @@ const useStyles = makeStyles(theme => ({
   chipGood: { background: '#dce8d6', color: '#315231', fontWeight: 700 },
   chipWarn: { background: '#f1dfb6', color: '#6b4b10', fontWeight: 700 },
   chipBad: { background: '#ead0c8', color: '#7c2f23', fontWeight: 700 },
+  contextGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: theme.spacing(2),
+  },
 }));
 
 const useIdpData = () => {
@@ -233,6 +247,9 @@ const projectName = (projects: IdpProject[], id: string) =>
   projects.find(p => p.id === id)?.name ?? id;
 const templateName = (templates: IdpTemplate[], id: string) =>
   templates.find(t => t.id === id)?.name ?? id;
+const projectControlRef = (project: IdpProject) =>
+  project.relatedCatalogEntityRefs.find(ref => ref.startsWith('system:')) ??
+  `system:default/${project.id}`;
 const latest = <T extends { updatedAt?: string; createdAt: string }>(
   items: T[],
 ) =>
@@ -458,6 +475,263 @@ export const EmptyState = ({ title }: { title: string }) => (
   </IdpChrome>
 );
 
+type ControlContextApi = Pick<IdpApi, 'getProjectControlContext'>;
+
+const useBackendControlContextApi = (): ControlContextApi => {
+  const discoveryApi = useApi(discoveryApiRef);
+  const fetchApi = useApi(fetchApiRef);
+
+  return useMemo(
+    () => ({
+      getProjectControlContext: async (projectRef: string) => {
+        const baseUrl = await discoveryApi.getBaseUrl('idp');
+        return new BackendIdpApi({
+          baseUrl,
+          fetchApi: fetchApi.fetch,
+        }).getProjectControlContext(projectRef);
+      },
+    }),
+    [discoveryApi, fetchApi],
+  );
+};
+
+type ActionDecisionKey = Exclude<
+  keyof IdpProjectControlContext['allowedActions'],
+  'reasons'
+>;
+
+const actionLabels: Record<ActionDecisionKey, string> = {
+  observe: 'Observe',
+  plan: 'Plan',
+  dryRun: 'Dry-run',
+  proposeChange: 'Propose change',
+  executeNonProduction: 'Execute non-production',
+  executeProduction: 'Execute production',
+};
+
+const actionDecisionKeys = Object.keys(actionLabels) as ActionDecisionKey[];
+
+const ControlLogList = ({ logs }: { logs: IdpControlOperationLog[] }) => {
+  const classes = useStyles();
+
+  if (!logs.length) {
+    return (
+      <Typography className={classes.muted}>
+        No recent runtime operation logs are recorded for this Project yet.
+      </Typography>
+    );
+  }
+
+  return (
+    <Box>
+      {logs.slice(0, 4).map(log => (
+        <Box key={log.id} className={classes.timelineItem}>
+          <Box className={classes.iconBubble}>
+            <HistoryIcon fontSize="small" />
+          </Box>
+          <Box>
+            <Typography variant="subtitle1">{log.message}</Typography>
+            <Typography className={classes.muted}>
+              {log.eventType} by {log.actor.entityRef} · {log.status} ·{' '}
+              {log.createdAt}
+            </Typography>
+          </Box>
+        </Box>
+      ))}
+    </Box>
+  );
+};
+
+const RefChips = ({ refs, empty }: { refs: string[]; empty: string }) => {
+  const classes = useStyles();
+
+  return refs.length ? (
+    <Box className={classes.metaGrid}>
+      {refs.map(ref => (
+        <Chip key={ref} size="small" className={classes.chip} label={ref} />
+      ))}
+    </Box>
+  ) : (
+    <Typography className={classes.muted}>{empty}</Typography>
+  );
+};
+
+export const ProjectControlContextSection = ({
+  projectRef,
+  controlContextApi,
+}: {
+  projectRef: string;
+  controlContextApi: ControlContextApi;
+}) => {
+  const classes = useStyles();
+  const [context, setContext] = useState<IdpProjectControlContext>();
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>(
+    'loading',
+  );
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    setStatus('loading');
+    setErrorMessage('');
+    setContext(undefined);
+
+    controlContextApi
+      .getProjectControlContext(projectRef)
+      .then(nextContext => {
+        if (active) {
+          setContext(nextContext);
+          setStatus('success');
+        }
+      })
+      .catch(error => {
+        if (active) {
+          setStatus('error');
+          setErrorMessage(
+            error instanceof Error ? error.message : 'Unknown IDP API error',
+          );
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [controlContextApi, projectRef]);
+
+  return (
+    <SectionCard title="Backend control context">
+      {status === 'loading' && (
+        <Typography className={classes.muted}>
+          Loading backend control context...
+        </Typography>
+      )}
+      {status === 'error' && (
+        <Box>
+          <StatusChip status="error" />
+          <Typography style={{ marginTop: 12 }}>
+            Backend control context could not be loaded.
+          </Typography>
+          <Typography className={classes.muted}>{errorMessage}</Typography>
+        </Box>
+      )}
+      {status === 'success' && context && (
+        <Box className={classes.cardList}>
+          <Box className={classes.contextGrid}>
+            <Box className={classes.miniCard}>
+              <Typography variant="subtitle2" className={classes.muted}>
+                Project ref
+              </Typography>
+              <Typography variant="h6">{context.projectRef}</Typography>
+              <Typography className={classes.muted}>
+                Owner:{' '}
+                {context.project.ownerRefs.length
+                  ? context.project.ownerRefs.join(', ')
+                  : 'Catalog owner not resolved'}
+              </Typography>
+            </Box>
+            <Box className={classes.miniCard}>
+              <Typography variant="subtitle2" className={classes.muted}>
+                Desired state source
+              </Typography>
+              <Typography variant="h6">
+                {context.desiredState.authoritativeSource}
+              </Typography>
+              <Typography className={classes.muted}>
+                IDP backend desired-state store:{' '}
+                {context.desiredState.idpBackendStoresAuthoritativeDesiredState
+                  ? 'enabled'
+                  : 'disabled'}
+              </Typography>
+            </Box>
+            <Box className={classes.miniCard}>
+              <Typography variant="subtitle2" className={classes.muted}>
+                Latest plan
+              </Typography>
+              {context.latestPlan ? (
+                <>
+                  <Typography variant="h6">
+                    {context.latestPlan.planRef}
+                  </Typography>
+                  <Typography className={classes.muted}>
+                    {context.latestPlan.status} ·{' '}
+                    {context.latestPlan.expectedChangeSummary}
+                  </Typography>
+                </>
+              ) : (
+                <Typography className={classes.muted}>
+                  No latest plan is recorded for this Project yet.
+                </Typography>
+              )}
+            </Box>
+            <Box className={classes.miniCard}>
+              <Typography variant="subtitle2" className={classes.muted}>
+                Latest action run
+              </Typography>
+              {context.latestActionRun ? (
+                <>
+                  <Typography variant="h6">
+                    {context.latestActionRun.actionRunRef}
+                  </Typography>
+                  <Typography className={classes.muted}>
+                    {context.latestActionRun.mode} ·{' '}
+                    {context.latestActionRun.status}
+                  </Typography>
+                </>
+              ) : (
+                <Typography className={classes.muted}>
+                  No latest action run is recorded for this Project yet.
+                </Typography>
+              )}
+            </Box>
+          </Box>
+
+          <Box>
+            <Typography variant="h6">Related Environment refs</Typography>
+            <RefChips
+              refs={context.environmentRefs}
+              empty="No related Environment refs are returned by backend control context."
+            />
+          </Box>
+          <Box>
+            <Typography variant="h6">Related Template refs</Typography>
+            <RefChips
+              refs={context.templateRefs}
+              empty="No related Template refs are returned by backend control context."
+            />
+          </Box>
+          <Box>
+            <Typography variant="h6">Approval summary</Typography>
+            <Typography className={classes.muted}>
+              These values summarize whether future actions are expected to need
+              approval. They are not permission enforcement or completed
+              approval records.
+            </Typography>
+            <Box mt={1} className={classes.metaGrid}>
+              {actionDecisionKeys.map(action => (
+                <Chip
+                  key={action}
+                  size="small"
+                  className={classes.chip}
+                  label={`${actionLabels[action]}: ${context.allowedActions[action]}`}
+                />
+              ))}
+            </Box>
+            {context.allowedActions.reasons.map(reason => (
+              <Typography key={reason} className={classes.muted}>
+                {reason}
+              </Typography>
+            ))}
+          </Box>
+          <Box>
+            <Typography variant="h6">Recent runtime logs</Typography>
+            <ControlLogList logs={context.recentOperationLogs} />
+          </Box>
+        </Box>
+      )}
+    </SectionCard>
+  );
+};
+
 export const IdpDashboardPage = ({
   projects,
   environments,
@@ -652,12 +926,13 @@ export const ProjectListPage = ({
   </IdpChrome>
 );
 
-export const ProjectDetailPage = ({
+export const ProjectDetailContent = ({
   projects,
   environments,
   templates,
   operationLogs,
-}: IdpDataProps) => {
+  controlContextApi,
+}: IdpDataProps & { controlContextApi: ControlContextApi }) => {
   const classes = useStyles();
   const { projectId } = useParams();
   const p = projects.find(x => x.id === projectId);
@@ -701,6 +976,12 @@ export const ProjectDetailPage = ({
             </SectionCard>
           </Grid>
           <Grid item xs={12}>
+            <ProjectControlContextSection
+              projectRef={projectControlRef(p)}
+              controlContextApi={controlContextApi}
+            />
+          </Grid>
+          <Grid item xs={12}>
             <SectionCard title="Linked environments">
               <Grid container spacing={2}>
                 {linkedEnvironments.map(e => (
@@ -736,6 +1017,14 @@ export const ProjectDetailPage = ({
         </Grid>
       </Content>
     </IdpChrome>
+  );
+};
+
+export const ProjectDetailPage = (props: IdpDataProps) => {
+  const controlContextApi = useBackendControlContextApi();
+
+  return (
+    <ProjectDetailContent {...props} controlContextApi={controlContextApi} />
   );
 };
 
@@ -1135,6 +1424,16 @@ export const IdpRoot = () => {
           element={<TemplateRunPage {...data} />}
         />
       </Routes>
+    </Page>
+  );
+};
+
+export const IdpProjectDetailRoot = () => {
+  const data = useIdpData();
+
+  return (
+    <Page themeId="tool">
+      <ProjectDetailPage {...data} />
     </Page>
   );
 };

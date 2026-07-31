@@ -31,3 +31,32 @@ test('App should render the welcome page', async ({ page }) => {
     page.getByRole('link', { name: 'APIs', exact: true }),
   ).toBeVisible();
 });
+
+test('IDP Project detail should show backend control context', async ({
+  page,
+}) => {
+  await page.goto('/');
+
+  const enterButton = page.getByRole('button', { name: 'Enter' });
+  await expect(enterButton).toBeVisible();
+  await enterButton.click();
+
+  await expect(
+    page.getByRole('navigation').getByRole('link', {
+      name: 'Catalog',
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.goto('/idp/projects/examples');
+
+  await expect(
+    page.getByRole('heading', { name: 'Backend control context' }),
+  ).toBeVisible();
+  await expect(page.getByText('system:default/examples')).toBeVisible();
+  await expect(page.getByText('catalog-and-git')).toBeVisible();
+  await expect(page.getByText('resource:default/examples-dev')).toBeVisible();
+  await expect(
+    page.getByText('template:default/example-nodejs-template'),
+  ).toBeVisible();
+  await expect(page.getByText('Approval summary')).toBeVisible();
+});
