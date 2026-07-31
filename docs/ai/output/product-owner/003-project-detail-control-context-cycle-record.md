@@ -26,7 +26,8 @@
 - Delivery unit: Project detail UI を backend control context に接続する
 - Issue: https://github.com/Bite-8/bara-developer-platform/issues/25
 - Pull Request: https://github.com/Bite-8/bara-developer-platform/pull/29
-- PR head: `a50950bd217d3f029539631dda0fb33283f17e24`
+- Reviewed implementation commit: `a50950bd217d3f029539631dda0fb33283f17e24`
+- Final branch head: `501974e`。この commit は reviewer 成果物と Product Owner cycle record の追加のみで、実装 code の変更は含まない。
 - PR status: open、通常 PR、draft ではない
 - CI:
   - `Format, lint, type check, and tests`: pass
