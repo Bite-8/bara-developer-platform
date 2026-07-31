@@ -52,7 +52,9 @@ test('IDP Project detail should show backend control context', async ({
   await expect(
     page.getByRole('heading', { name: 'Backend control context' }),
   ).toBeVisible();
-  await expect(page.getByText('system:default/examples')).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'system:default/examples' }),
+  ).toBeVisible();
   await expect(page.getByText('catalog-and-git')).toBeVisible();
   await expect(page.getByText('resource:default/examples-dev')).toBeVisible();
   await expect(
