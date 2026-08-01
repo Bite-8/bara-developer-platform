@@ -320,15 +320,10 @@ export class ControlContextService {
       policyDecision,
     };
 
-    const [storedPlan, storedOperationLog] = await Promise.all([
-      this.runtimeStore.appendPlan(plan),
-      this.runtimeStore.appendOperationLog(operationLog),
-    ]);
-
-    return {
-      plan: storedPlan,
-      operationLog: storedOperationLog,
-    };
+    return this.runtimeStore.appendPlanWithOperationLog({
+      plan,
+      operationLog,
+    });
   }
 
   private allowedActionsForProject(project: Entity): AllowedActionSummary {
