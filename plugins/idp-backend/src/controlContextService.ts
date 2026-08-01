@@ -4,12 +4,13 @@ import {
   RELATION_PART_OF,
   stringifyEntityRef,
 } from '@backstage/catalog-model';
-import { NotFoundError } from '@backstage/errors';
+import { AuthenticationError, NotFoundError } from '@backstage/errors';
 import { CatalogService } from '@backstage/plugin-catalog-node';
 import { BackstageCredentials } from '@backstage/backend-plugin-api';
 
 import {
   AllowedActionSummary,
+  ActorRef,
   CreateTemplatePlanPreviewRequest,
   CreateTemplatePlanPreviewResponse,
   PlanSummary,
@@ -74,6 +75,34 @@ const statusForPolicyDecision = (
   }
 
   return 'planned';
+};
+
+const auditActorForCredentials = (
+  credentials: BackstageCredentials,
+): ActorRef => {
+  const principal = credentials.principal as {
+    type?: string;
+    userEntityRef?: string;
+    subject?: string;
+  };
+
+  if (principal.type === 'user' && principal.userEntityRef) {
+    return {
+      type: 'user',
+      entityRef: principal.userEntityRef,
+    };
+  }
+
+  if (principal.type === 'service' && principal.subject) {
+    return {
+      type: 'service',
+      entityRef: principal.subject,
+    };
+  }
+
+  throw new AuthenticationError(
+    'Authenticated Backstage user or service identity is required to create an auditable Plan preview.',
+  );
 };
 
 export class ControlContextService {
@@ -190,6 +219,7 @@ export class ControlContextService {
     }
 
     const projectRef = stringifyEntityRef(project);
+    const actor = auditActorForCredentials(options.credentials);
     const ownerRefs = relationTargets(project, 'ownedBy');
     const productionLike = isProductionLikeEnvironment(
       options.request.environmentRef,
@@ -222,7 +252,7 @@ export class ControlContextService {
       id: idPart,
       kind: 'Plan',
       planRef,
-      actor: options.request.actor,
+      actor,
       targetEntityRef: projectRef,
       eventType: 'plan.created',
       createdAt: now,
@@ -236,7 +266,7 @@ export class ControlContextService {
       id: `log-${idPart}`,
       kind: 'OperationLog' as const,
       operationLogRef: `operation-log:${idPart}`,
-      actor: options.request.actor,
+      actor,
       targetEntityRef: projectRef,
       eventType: 'plan.created' as const,
       createdAt: now,

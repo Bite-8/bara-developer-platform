@@ -1250,9 +1250,6 @@ export const TemplateRunContent = ({
   const [step, setStep] = useState<'input' | 'confirm' | 'result'>('input');
   const [projectId, setProjectId] = useState('');
   const [environmentId, setEnvironmentId] = useState('');
-  const [requestedBy, setRequestedBy] = useState(
-    'user:default/local-developer',
-  );
   const [parameters, setParameters] = useState<Record<string, string>>({});
   const [preview, setPreview] = useState<IdpTemplatePlanPreview>();
   const [previewStatus, setPreviewStatus] = useState<
@@ -1294,7 +1291,6 @@ export const TemplateRunContent = ({
         environmentRef: selectedEnvironmentRef || undefined,
         templateRef,
         parameters,
-        actor: { type: 'user', entityRef: requestedBy },
         idempotencyKey: [
           selectedProjectRef,
           selectedEnvironmentRef || 'no-environment',
@@ -1363,13 +1359,12 @@ export const TemplateRunContent = ({
                     </TextField>
                   </Grid>
                   <Grid item xs={12} md={4}>
-                    <TextField
-                      fullWidth
-                      required
-                      label="Requested by"
-                      value={requestedBy}
-                      onChange={event => setRequestedBy(event.target.value)}
-                    />
+                    <Box className={classes.miniCard}>
+                      <Typography variant="subtitle2" className={classes.muted}>
+                        Audit actor
+                      </Typography>
+                      <Typography>Backstage session identity</Typography>
+                    </Box>
                   </Grid>
                   {t.parameters.map(parameter => (
                     <Grid item xs={12} md={6} key={parameter.name}>
@@ -1395,7 +1390,7 @@ export const TemplateRunContent = ({
                     <Button
                       variant="contained"
                       color="primary"
-                      disabled={!projectId || !requestedBy}
+                      disabled={!projectId}
                       onClick={createPreview}
                     >
                       {previewStatus === 'creating'
@@ -1424,7 +1419,9 @@ export const TemplateRunContent = ({
                   <Typography>
                     Environment ref: {selectedEnvironmentRef || 'not selected'}
                   </Typography>
-                  <Typography>Requested by: {requestedBy}</Typography>
+                  <Typography>
+                    Audit actor: {preview.plan.actor.entityRef}
+                  </Typography>
                   <Box mt={2} className={classes.metaGrid}>
                     <StatusChip status={preview.plan.status} />
                     <Chip

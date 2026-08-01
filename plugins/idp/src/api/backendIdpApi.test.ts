@@ -81,7 +81,6 @@ describe('BackendIdpApi', () => {
       environmentRef: 'resource:default/examples-dev',
       templateRef: 'template:default/node-service',
       parameters: { serviceName: 'checkout-api' },
-      actor: { entityRef: 'user:default/guest', type: 'user' as const },
       idempotencyKey: 'preview-node',
     };
 

@@ -73,7 +73,6 @@ export type CreateTemplatePlanPreviewRequest = {
   environmentRef?: string;
   templateRef: string;
   parameters: Record<string, unknown>;
-  actor: ActorRef;
   idempotencyKey: string;
 };
 

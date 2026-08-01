@@ -340,9 +340,6 @@ describe('TemplateRunContent', () => {
     const textInputs =
       rendered.container.querySelectorAll('input[type="text"]');
     fireEvent.change(textInputs[0], {
-      target: { value: 'user:default/guest' },
-    });
-    fireEvent.change(textInputs[1], {
       target: { value: 'checkout-api' },
     });
     fireEvent.click(screen.getByText('Create plan preview'));
@@ -354,12 +351,19 @@ describe('TemplateRunContent', () => {
           environmentRef: 'resource:default/examples-dev',
           templateRef: 'template:default/node-api',
           parameters: { serviceName: 'checkout-api' },
-          actor: { type: 'user', entityRef: 'user:default/guest' },
         }),
       );
     });
+    expect(
+      controlContextApi.createTemplatePlanPreview,
+    ).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        actor: expect.anything(),
+      }),
+    );
     expect(screen.getByText('Expected change')).toBeTruthy();
     expect(screen.getByText(preview.plan.expectedChangeSummary)).toBeTruthy();
+    expect(screen.getByText('Audit actor: user:default/guest')).toBeTruthy();
     expect(screen.getByText('Policy: needs-approval')).toBeTruthy();
     expect(
       screen.getByText('Required approval: environment-owner'),

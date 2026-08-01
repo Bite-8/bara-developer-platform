@@ -195,7 +195,6 @@ describe('ControlContextService', () => {
         environmentRef: 'resource:default/payments-dev',
         templateRef: 'template:default/node-service',
         parameters: { serviceName: 'checkout-api' },
-        actor: { type: 'user', entityRef: 'user:default/guest' },
         idempotencyKey: 'preview-checkout-api',
       },
     });
@@ -203,6 +202,7 @@ describe('ControlContextService', () => {
     expect(preview.plan).toMatchObject({
       kind: 'Plan',
       planRef: 'plan:preview-checkout-api',
+      actor: { type: 'user', entityRef: 'user:default/guest' },
       targetEntityRef: 'system:default/payments',
       status: 'planned',
       expectedChangeSummary: expect.stringContaining(
@@ -228,6 +228,7 @@ describe('ControlContextService', () => {
       environmentRef: 'resource:default/payments-dev',
       templateRef: 'template:default/node-service',
       planRef: preview.plan.planRef,
+      actor: { type: 'user', entityRef: 'user:default/guest' },
     });
 
     const context = await service.getProjectControlContext({
@@ -237,6 +238,51 @@ describe('ControlContextService', () => {
     expect(context.latestPlan).toEqual(preview.plan);
     expect(context.recentOperationLogs).toEqual([preview.operationLog]);
     expect(context.latestActionRun).toBeUndefined();
+  });
+
+  it('stores service credentials as the audit actor when a service creates a Plan preview', async () => {
+    const service = new ControlContextService(
+      createCatalog() as any,
+      new InMemoryRuntimeAuditStore(),
+    );
+
+    const preview = await service.createTemplatePlanPreview({
+      credentials: mockCredentials.service('plugin:idp-automation'),
+      request: {
+        projectRef: 'system:default/payments',
+        templateRef: 'template:default/node-service',
+        parameters: {},
+        idempotencyKey: 'preview-service-actor',
+      },
+    });
+
+    expect(preview.plan.actor).toEqual({
+      type: 'service',
+      entityRef: 'plugin:idp-automation',
+    });
+    expect(preview.operationLog.actor).toEqual({
+      type: 'service',
+      entityRef: 'plugin:idp-automation',
+    });
+  });
+
+  it('rejects Plan preview creation when credentials do not identify a user or service actor', async () => {
+    const service = new ControlContextService(
+      createCatalog() as any,
+      new InMemoryRuntimeAuditStore(),
+    );
+
+    await expect(
+      service.createTemplatePlanPreview({
+        credentials: mockCredentials.none(),
+        request: {
+          projectRef: 'system:default/payments',
+          templateRef: 'template:default/node-service',
+          parameters: {},
+          idempotencyKey: 'preview-no-actor',
+        },
+      }),
+    ).rejects.toThrow(/identity is required/);
   });
 
   it('marks production-like template Plan previews as needing approval', async () => {
@@ -253,7 +299,6 @@ describe('ControlContextService', () => {
         environmentRef: 'resource:default/payments-prod',
         templateRef: 'template:default/node-service',
         parameters: {},
-        actor: { type: 'user', entityRef: 'user:default/guest' },
         idempotencyKey: 'preview-prod-node',
       },
     });
@@ -299,7 +344,6 @@ describe('ControlContextService', () => {
         environmentRef: 'resource:default/payments-dev',
         templateRef: 'template:default/node-service',
         parameters: {},
-        actor: { type: 'user', entityRef: 'user:default/guest' },
         idempotencyKey: 'preview-ownerless-node',
       },
     });

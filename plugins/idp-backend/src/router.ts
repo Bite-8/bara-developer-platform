@@ -16,18 +16,15 @@ export async function createRouter(options: {
   const projectContextQuery = z.object({
     projectRef: z.string().min(1),
   });
-  const actorSchema = z.object({
-    entityRef: z.string().min(1),
-    type: z.enum(['user', 'group', 'service', 'agent']),
-  });
-  const createTemplatePlanPreviewBody = z.object({
-    projectRef: z.string().min(1),
-    environmentRef: z.string().min(1).optional(),
-    templateRef: z.string().min(1),
-    parameters: z.record(z.unknown()).default({}),
-    actor: actorSchema,
-    idempotencyKey: z.string().min(8).max(160),
-  });
+  const createTemplatePlanPreviewBody = z
+    .object({
+      projectRef: z.string().min(1),
+      environmentRef: z.string().min(1).optional(),
+      templateRef: z.string().min(1),
+      parameters: z.record(z.unknown()).default({}),
+      idempotencyKey: z.string().min(8).max(160),
+    })
+    .strict();
 
   router.get('/control-context/project', async (req, res) => {
     const parsed = projectContextQuery.safeParse(req.query);

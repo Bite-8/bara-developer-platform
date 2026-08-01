@@ -107,7 +107,6 @@ describe('createRouter', () => {
       environmentRef: 'resource:default/examples-dev',
       templateRef: 'template:default/node-service',
       parameters: { serviceName: 'checkout-api' },
-      actor: { type: 'user', entityRef: 'user:default/guest' },
       idempotencyKey: 'preview-node-dev',
     };
     const response = await request(app)
@@ -137,13 +136,35 @@ describe('createRouter', () => {
     });
     const app = express().use(router);
 
+    const response = await request(app).post('/plans/template-preview').send({
+      projectRef: 'system:default/examples',
+      templateRef: 'template:default/node-service',
+      idempotencyKey: 'short',
+    });
+
+    expect(response.status).toBeGreaterThanOrEqual(400);
+    expect(controlContext.createTemplatePlanPreview).not.toHaveBeenCalled();
+  });
+
+  it('rejects request-body actor spoofing attempts before audit storage', async () => {
+    const controlContext = {
+      getProjectControlContext: jest.fn(),
+      createTemplatePlanPreview: jest.fn(),
+    };
+    const router = await createRouter({
+      httpAuth: mockServices.httpAuth(),
+      controlContext: controlContext as any,
+    });
+    const app = express().use(router);
+
     const response = await request(app)
       .post('/plans/template-preview')
       .send({
         projectRef: 'system:default/examples',
         templateRef: 'template:default/node-service',
-        actor: { type: 'user', entityRef: 'user:default/guest' },
-        idempotencyKey: 'short',
+        parameters: { serviceName: 'checkout-api' },
+        actor: { type: 'user', entityRef: 'user:default/admin' },
+        idempotencyKey: 'preview-spoof-attempt',
       });
 
     expect(response.status).toBeGreaterThanOrEqual(400);

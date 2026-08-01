@@ -217,10 +217,6 @@ export type IdpTemplatePlanPreviewInput = {
   environmentRef?: string;
   templateRef: string;
   parameters: Record<string, unknown>;
-  actor: {
-    entityRef: string;
-    type: 'user' | 'group' | 'service' | 'agent';
-  };
   idempotencyKey: string;
 };
 
