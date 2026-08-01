@@ -94,13 +94,18 @@ describe('DatabaseRuntimeAuditStore', () => {
     );
     await expect(client.schema.hasTable('idp_template')).resolves.toBe(false);
 
-    const indexes = await client.raw("PRAGMA index_list('idp_operation_log')");
-    expect(indexes).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ name: 'idx_idp_oplog_project_created' }),
-        expect.objectContaining({ name: 'idx_idp_oplog_target_created' }),
-      ]),
-    );
+    const indexes = (await client('sqlite_master')
+      .select('name')
+      .where({ type: 'index' })
+      .whereLike('name', 'idx_idp_%')) as { name: string }[];
+    expect(indexes.map(index => index.name).sort()).toEqual([
+      'idx_idp_action_project_created',
+      'idx_idp_action_target_created',
+      'idx_idp_oplog_project_created',
+      'idx_idp_oplog_target_created',
+      'idx_idp_plan_project_created',
+      'idx_idp_plan_target_created',
+    ]);
   });
 
   it('retains normalized records and latest ordering after a database reconnect', async () => {
