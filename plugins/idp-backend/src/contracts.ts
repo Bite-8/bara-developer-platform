@@ -81,6 +81,12 @@ export type CreateTemplatePlanPreviewResponse = {
   operationLog: OperationLogRecord;
 };
 
+export type CreateDryRunActionRunRequest = {
+  projectRef: string;
+  planRef: string;
+  idempotencyKey: string;
+};
+
 export type ActionRunSummary = RuntimeRecordBase & {
   kind: 'ActionRun';
   actionRunRef: string;
@@ -88,6 +94,17 @@ export type ActionRunSummary = RuntimeRecordBase & {
   mode: 'dry-run' | 'execute';
   externalExecutionRef?: string;
   resultSummary?: string;
+};
+
+export type CreateDryRunActionRunResponse = {
+  actionRun: ActionRunSummary;
+  operationLog: OperationLogRecord;
+  sideEffectBoundary: {
+    scaffolderTaskStarted: false;
+    gitPullRequestCreated: false;
+    externalExecutionStarted: false;
+    message: string;
+  };
 };
 
 export type OperationLogRecord = RuntimeRecordBase & {

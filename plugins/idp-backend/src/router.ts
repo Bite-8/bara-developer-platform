@@ -25,6 +25,13 @@ export async function createRouter(options: {
       idempotencyKey: z.string().min(8).max(160),
     })
     .strict();
+  const createDryRunActionRunBody = z
+    .object({
+      projectRef: z.string().min(1),
+      planRef: z.string().min(1),
+      idempotencyKey: z.string().min(8).max(160),
+    })
+    .strict();
 
   router.get('/control-context/project', async (req, res) => {
     const parsed = projectContextQuery.safeParse(req.query);
@@ -58,6 +65,23 @@ export async function createRouter(options: {
     });
 
     res.status(201).json(preview);
+  });
+
+  router.post('/action-runs/dry-run', async (req, res) => {
+    const parsed = createDryRunActionRunBody.safeParse(req.body);
+    if (!parsed.success) {
+      throw new InputError(parsed.error.toString());
+    }
+
+    const credentials = await options.httpAuth.credentials(req, {
+      allow: ['user', 'service'],
+    });
+    const dryRun = await options.controlContext.createDryRunActionRun({
+      request: parsed.data,
+      credentials,
+    });
+
+    res.status(201).json(dryRun);
   });
 
   return router;

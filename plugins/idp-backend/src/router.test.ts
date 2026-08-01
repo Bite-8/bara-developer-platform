@@ -30,6 +30,7 @@ describe('createRouter', () => {
         },
       }),
       createTemplatePlanPreview: jest.fn(),
+      createDryRunActionRun: jest.fn(),
     };
     const router = await createRouter({
       httpAuth: mockServices.httpAuth(),
@@ -96,6 +97,7 @@ describe('createRouter', () => {
     const controlContext = {
       getProjectControlContext: jest.fn(),
       createTemplatePlanPreview: jest.fn().mockResolvedValue(preview),
+      createDryRunActionRun: jest.fn(),
     };
     const router = await createRouter({
       httpAuth: mockServices.httpAuth(),
@@ -130,6 +132,7 @@ describe('createRouter', () => {
     const controlContext = {
       getProjectControlContext: jest.fn(),
       createTemplatePlanPreview: jest.fn(),
+      createDryRunActionRun: jest.fn(),
     };
     const router = await createRouter({
       httpAuth: mockServices.httpAuth(),
@@ -151,6 +154,7 @@ describe('createRouter', () => {
     const controlContext = {
       getProjectControlContext: jest.fn(),
       createTemplatePlanPreview: jest.fn(),
+      createDryRunActionRun: jest.fn(),
     };
     const router = await createRouter({
       httpAuth: mockServices.httpAuth(),
@@ -170,5 +174,100 @@ describe('createRouter', () => {
 
     expect(response.status).toBeGreaterThanOrEqual(400);
     expect(controlContext.createTemplatePlanPreview).not.toHaveBeenCalled();
+  });
+
+  it('creates a dry-run ActionRun through a validated write path', async () => {
+    const dryRun = {
+      actionRun: {
+        id: 'dry-run-preview-node-dev',
+        kind: 'ActionRun',
+        actionRunRef: 'action-run:dry-run-preview-node-dev',
+        actor: { type: 'user', entityRef: 'user:default/guest' },
+        targetEntityRef: 'system:default/examples',
+        eventType: 'dry-run.completed',
+        createdAt: '2026-08-01T00:01:00.000Z',
+        status: 'dry-run-succeeded',
+        planRef: 'plan:preview-node-dev',
+        mode: 'dry-run',
+        resultSummary:
+          'Record-only dry-run completed; no Scaffolder task, Git PR, or external execution was started.',
+      },
+      operationLog: {
+        id: 'log-dry-run-preview-node-dev',
+        kind: 'OperationLog',
+        operationLogRef: 'operation-log:dry-run-preview-node-dev',
+        actor: { type: 'user', entityRef: 'user:default/guest' },
+        targetEntityRef: 'system:default/examples',
+        eventType: 'dry-run.completed',
+        createdAt: '2026-08-01T00:01:00.000Z',
+        status: 'dry-run-succeeded',
+        projectRef: 'system:default/examples',
+        planRef: 'plan:preview-node-dev',
+        actionRunRef: 'action-run:dry-run-preview-node-dev',
+        message:
+          'Record-only dry-run completed; no Scaffolder task, Git PR, or external execution was started.',
+      },
+      sideEffectBoundary: {
+        scaffolderTaskStarted: false,
+        gitPullRequestCreated: false,
+        externalExecutionStarted: false,
+        message:
+          'Record-only dry-run completed; no Scaffolder task, Git PR, or external execution was started.',
+      },
+    };
+    const controlContext = {
+      getProjectControlContext: jest.fn(),
+      createTemplatePlanPreview: jest.fn(),
+      createDryRunActionRun: jest.fn().mockResolvedValue(dryRun),
+    };
+    const router = await createRouter({
+      httpAuth: mockServices.httpAuth(),
+      controlContext: controlContext as any,
+    });
+    const app = express().use(router);
+
+    const body = {
+      projectRef: 'system:default/examples',
+      planRef: 'plan:preview-node-dev',
+      idempotencyKey: 'preview-node-dev',
+    };
+    const response = await request(app).post('/action-runs/dry-run').send(body);
+
+    expect(response.status).toBe(201);
+    expect(response.body).toEqual(dryRun);
+    expect(controlContext.createDryRunActionRun).toHaveBeenCalledWith({
+      request: body,
+      credentials: expect.objectContaining({
+        principal: expect.objectContaining({
+          userEntityRef: mockCredentials.user().principal.userEntityRef,
+        }),
+      }),
+    });
+  });
+
+  it('rejects dry-run actor spoofing and unexpected execution fields', async () => {
+    const controlContext = {
+      getProjectControlContext: jest.fn(),
+      createTemplatePlanPreview: jest.fn(),
+      createDryRunActionRun: jest.fn(),
+    };
+    const router = await createRouter({
+      httpAuth: mockServices.httpAuth(),
+      controlContext: controlContext as any,
+    });
+    const app = express().use(router);
+
+    const response = await request(app)
+      .post('/action-runs/dry-run')
+      .send({
+        projectRef: 'system:default/examples',
+        planRef: 'plan:preview-node-dev',
+        idempotencyKey: 'preview-node-dev',
+        actor: { type: 'user', entityRef: 'user:default/admin' },
+        externalExecutionRef: 'task:should-not-exist',
+      });
+
+    expect(response.status).toBeGreaterThanOrEqual(400);
+    expect(controlContext.createDryRunActionRun).not.toHaveBeenCalled();
   });
 });
