@@ -598,6 +598,16 @@ const findPlanPreviewTemplate = (
   );
 };
 
+const relatedProjectEnvironments = (
+  project: IdpProject,
+  environments: IdpEnvironment[],
+) =>
+  environments.filter(
+    environment =>
+      environment.projectId === project.id ||
+      project.environmentIds.includes(environment.id),
+  );
+
 const findPlanPreviewEnvironment = (
   project: IdpProject,
   environments: IdpEnvironment[],
@@ -614,16 +624,6 @@ const findPlanPreviewEnvironment = (
 
   return contextEnvironment ?? projectEnvironments[0];
 };
-
-const relatedProjectEnvironments = (
-  project: IdpProject,
-  environments: IdpEnvironment[],
-) =>
-  environments.filter(
-    environment =>
-      environment.projectId === project.id ||
-      project.environmentIds.includes(environment.id),
-  );
 
 const planPreviewPath = ({
   project,
