@@ -5522,6 +5522,7 @@ __metadata:
     express-promise-router: "npm:^4.1.0"
     supertest: "npm:^6.2.4"
     typescript: "npm:~5.8.0"
+    yaml: "npm:^2.9.0"
     zod: "npm:^3.25.76 || ^4.0.0"
   languageName: unknown
   linkType: soft
@@ -32162,7 +32163,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yaml@npm:^2.0.0, yaml@npm:^2.2.1, yaml@npm:^2.2.2":
+"yaml@npm:^2.0.0, yaml@npm:^2.2.1, yaml@npm:^2.2.2, yaml@npm:^2.9.0":
   version: 2.9.0
   resolution: "yaml@npm:2.9.0"
   bin:

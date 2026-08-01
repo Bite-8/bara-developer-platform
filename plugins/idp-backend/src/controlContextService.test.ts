@@ -25,9 +25,15 @@ const projectEntity: Entity = {
 const environmentEntity: Entity = {
   apiVersion: 'backstage.io/v1alpha1',
   kind: 'Resource',
-  metadata: { name: 'payments-prod' },
+  metadata: {
+    name: 'payments-prod',
+    annotations: { 'bara.dev/criticality': 'production' },
+  },
   spec: { type: 'production-environment', owner: 'group:default/platform' },
-  relations: [{ type: 'partOf', targetRef: 'system:default/payments' }],
+  relations: [
+    { type: 'ownedBy', targetRef: 'group:default/platform' },
+    { type: 'partOf', targetRef: 'system:default/payments' },
+  ],
 };
 
 const templateEntity: Entity = {
@@ -46,7 +52,13 @@ const unrelatedTemplateEntity: Entity = {
 };
 
 const createCatalog = () => ({
-  getEntityByRef: jest.fn().mockResolvedValue(projectEntity),
+  getEntityByRef: jest.fn().mockImplementation((entityRef: string) => {
+    if (entityRef === 'resource:default/payments-prod') {
+      return Promise.resolve(environmentEntity);
+    }
+
+    return Promise.resolve(projectEntity);
+  }),
   getEntitiesByRefs: jest
     .fn()
     .mockResolvedValue({ items: [environmentEntity, templateEntity] }),
@@ -138,6 +150,13 @@ describe('ControlContextService', () => {
         ownerRefs: ['group:default/platform'],
       },
       environmentRefs: ['resource:default/payments-prod'],
+      environments: [
+        {
+          entityRef: 'resource:default/payments-prod',
+          ownerRefs: ['group:default/platform'],
+          criticality: 'production',
+        },
+      ],
       templateRefs: ['template:default/node-service'],
       allowedActions: {
         observe: 'allowed',
@@ -285,8 +304,22 @@ describe('ControlContextService', () => {
     ).rejects.toThrow(/identity is required/);
   });
 
-  it('marks production-like template Plan previews as needing approval', async () => {
+  it('marks Catalog production-criticality Plan previews as needing approval', async () => {
     const catalog = createCatalog();
+    const productionCriticalEnvironment: Entity = {
+      ...environmentEntity,
+      metadata: {
+        name: 'payments-live',
+        annotations: { 'bara.dev/criticality': 'production' },
+      },
+    };
+    catalog.getEntityByRef.mockImplementation((entityRef: string) => {
+      if (entityRef === 'resource:default/payments-live') {
+        return Promise.resolve(productionCriticalEnvironment);
+      }
+
+      return Promise.resolve(projectEntity);
+    });
     const service = new ControlContextService(
       catalog as any,
       new InMemoryRuntimeAuditStore(),
@@ -296,7 +329,7 @@ describe('ControlContextService', () => {
       credentials,
       request: {
         projectRef: 'system:default/payments',
-        environmentRef: 'resource:default/payments-prod',
+        environmentRef: 'resource:default/payments-live',
         templateRef: 'template:default/node-service',
         parameters: {},
         idempotencyKey: 'preview-prod-node',
@@ -318,6 +351,10 @@ describe('ControlContextService', () => {
         factors: expect.arrayContaining(['production-like-environment']),
       },
     });
+    expect(catalog.getEntityByRef).toHaveBeenCalledWith(
+      'resource:default/payments-live',
+      { credentials },
+    );
   });
 
   it('denies template Plan previews when target Project ownership is missing', async () => {

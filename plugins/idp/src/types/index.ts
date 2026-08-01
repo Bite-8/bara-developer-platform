@@ -225,6 +225,12 @@ export type IdpTemplatePlanPreview = {
   operationLog: IdpControlOperationLog;
 };
 
+export type IdpEnvironmentControlContext = {
+  entityRef: string;
+  ownerRefs: string[];
+  criticality?: string;
+};
+
 export type IdpProjectControlContext = {
   projectRef: string;
   project: {
@@ -233,6 +239,7 @@ export type IdpProjectControlContext = {
     catalogEntityRef?: string;
   };
   environmentRefs: string[];
+  environments: IdpEnvironmentControlContext[];
   templateRefs: string[];
   allowedActions: {
     observe: 'allowed';

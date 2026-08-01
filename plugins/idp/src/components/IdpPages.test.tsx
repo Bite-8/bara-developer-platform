@@ -67,6 +67,13 @@ const controlContext = (
     catalogEntityRef: 'system:default/examples',
   },
   environmentRefs: ['resource:default/examples-dev'],
+  environments: [
+    {
+      entityRef: 'resource:default/examples-dev',
+      ownerRefs: ['group:default/guests'],
+      criticality: 'development',
+    },
+  ],
   templateRefs: ['template:default/example-nodejs-template'],
   allowedActions: {
     observe: 'allowed',
