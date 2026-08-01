@@ -20,11 +20,35 @@
 - [ ] `yarn test:e2e`（UI 導線を変更した場合）
 - [ ] 起動した app / backend に対して Review guide の対象操作を確認
 
+## Owner acceptance
+
+- Preview / safe local URL: <!-- 利用できない場合は理由 -->
+- 所有者が行う主要操作: <!-- 短時間で再現できる journey -->
+- 期待結果: <!-- 画面上の文言、response、状態 -->
+
+## UI / UX 仮説（該当する場合）
+
+- Baseline observation: <!-- 現在の journey で観測した事実 -->
+- 変更仮説と比較した interaction: <!-- 見た目の好みではなく改善理由 -->
+- 成功 / 失敗 / UNVERIFIED の観測: <!-- task success、time、迷い、理解、recoveryなど -->
+- 比較した有力案と暫定推奨の理由: <!-- Issueのoption comparisonを参照 -->
+
+## Rollout / operability
+
+- Production / persistent data / auth / permission / external dependency への影響: <!-- なしの場合は理由 -->
+- Configuration / Secret 境界: <!-- relevant な場合。値は書かない -->
+- Rollout / migration / smoke test: <!-- relevant な場合 -->
+- Rollback / forward recovery: <!-- relevant な場合 -->
+- Backup / restore: <!-- relevant な場合 -->
+- Health / logging / metrics / alert: <!-- relevant な場合 -->
+
+<!-- 本番 deploy、account作成、購入、permission変更は、ユーザーの明示依頼と承認なしに実行しない。 -->
+
 ## Review handoff
 
 - PR head commit SHA: <!-- reviewer が確認する immutable SHA -->
-- Quality review artifact / verdict: <!-- docs/ai/output/quality-reviewer/... と Pass / Fail / 未検証 -->
-- Product review artifact / verdict: <!-- 必要な場合。省略時は利用者挙動を変えない理由 -->
+- Quality review comment / check / verdict: <!-- reviewed SHA付き PASS / FAIL / UNVERIFIED -->
+- Product review comment / check / verdict: <!-- 必要な場合。省略時は利用者挙動を変えない理由 -->
 - Merge decision: <!-- main agent が同一 SHA の review と CI を確認後に記載 -->
 
 ## 残余リスク・未検証事項
