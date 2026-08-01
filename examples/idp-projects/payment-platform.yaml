@@ -1,0 +1,36 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: payment-platform
+  title: Payment Platform
+  description: A Catalog-backed Bara Project fixture.
+  annotations:
+    bara.dev/environment-ref: resource:default/payment-platform-dev,resource:default/payment-platform-prod
+    bara.dev/template-ref: template:default/example-nodejs-template
+spec:
+  owner: group:default/guests
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: payment-platform-dev
+  description: Development Environment desired-state fixture for Payment Platform.
+  annotations:
+    bara.dev/criticality: development
+spec:
+  type: environment
+  owner: group:default/guests
+  system: payment-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: payment-platform-prod
+  description: Production Environment desired-state fixture for Payment Platform.
+  annotations:
+    bara.dev/criticality: production
+spec:
+  type: environment
+  owner: group:default/guests
+  system: payment-platform

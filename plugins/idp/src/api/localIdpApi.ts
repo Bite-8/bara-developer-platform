@@ -122,6 +122,7 @@ class LocalIdpApi implements IdpApi {
         ownerRefs: [],
       },
       environmentRefs: [],
+      environments: [],
       templateRefs: [],
       allowedActions: {
         observe: 'allowed' as const,

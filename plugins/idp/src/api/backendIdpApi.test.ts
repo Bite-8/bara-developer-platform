@@ -8,6 +8,7 @@ describe('BackendIdpApi', () => {
         projectRef: 'system:default/examples',
         project: { ownerRefs: [] },
         environmentRefs: [],
+        environments: [],
         templateRefs: ['template:default/example-nodejs-template'],
         allowedActions: {
           observe: 'allowed',

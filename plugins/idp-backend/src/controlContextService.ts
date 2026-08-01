@@ -22,6 +22,7 @@ import { RuntimeAuditStore } from './runtimeStore';
 
 const environmentAnnotation = 'bara.dev/environment-ref';
 const templateAnnotation = 'bara.dev/template-ref';
+const criticalityAnnotation = 'bara.dev/criticality';
 
 const unique = (values: string[]) => Array.from(new Set(values)).sort();
 
@@ -47,8 +48,16 @@ const isEnvironmentEntity = (entity: Entity) =>
 
 const refName = (entityRef: string) => entityRef.split('/').pop() ?? entityRef;
 
-const isProductionLikeEnvironment = (environmentRef?: string) => {
-  const normalized = (environmentRef ?? '').toLocaleLowerCase('en-US');
+const isProductionLikeEnvironment = (options: {
+  environmentRef?: string;
+  criticality?: string;
+}) => {
+  const criticality = (options.criticality ?? '').toLocaleLowerCase('en-US');
+  if (criticality.includes('production') || criticality.includes('critical')) {
+    return true;
+  }
+
+  const normalized = (options.environmentRef ?? '').toLocaleLowerCase('en-US');
   return (
     normalized.includes('prod') ||
     normalized.includes('production') ||
@@ -105,6 +114,12 @@ const auditActorForCredentials = (
   );
 };
 
+const environmentControlContext = (entity: Entity) => ({
+  entityRef: stringifyEntityRef(entity),
+  ownerRefs: relationTargets(entity, 'ownedBy'),
+  criticality: entity.metadata.annotations?.[criticalityAnnotation],
+});
+
 export class ControlContextService {
   constructor(
     private readonly catalog: CatalogService,
@@ -127,10 +142,20 @@ export class ControlContextService {
 
     const projectRef = stringifyEntityRef(project);
     const projectRelationRefs = relationTargets(project, RELATION_HAS_PART);
+    const annotatedEnvironmentRefs = annotationRefs(
+      project,
+      environmentAnnotation,
+    );
+    const annotatedTemplateRefs = annotationRefs(project, templateAnnotation);
+    const forwardEntityRefs = unique([
+      ...projectRelationRefs,
+      ...annotatedEnvironmentRefs,
+      ...annotatedTemplateRefs,
+    ]);
     const [forwardRelatedEntities, reverseRelatedEntities] = await Promise.all([
-      projectRelationRefs.length > 0
+      forwardEntityRefs.length > 0
         ? this.catalog.getEntitiesByRefs(
-            { entityRefs: projectRelationRefs },
+            { entityRefs: forwardEntityRefs },
             { credentials: options.credentials },
           )
         : Promise.resolve({ items: [] }),
@@ -140,14 +165,18 @@ export class ControlContextService {
       ),
     ]);
 
-    const relatedEntities = [
-      ...forwardRelatedEntities.items.filter(
-        (entity): entity is Entity => entity !== undefined,
-      ),
-      ...reverseRelatedEntities.items.filter(entity =>
-        relationTargets(entity, RELATION_PART_OF).includes(projectRef),
-      ),
-    ];
+    const relatedEntities = Array.from(
+      new Map(
+        [
+          ...forwardRelatedEntities.items.filter(
+            (entity): entity is Entity => entity !== undefined,
+          ),
+          ...reverseRelatedEntities.items.filter(entity =>
+            relationTargets(entity, RELATION_PART_OF).includes(projectRef),
+          ),
+        ].map(entity => [stringifyEntityRef(entity), entity]),
+      ).values(),
+    );
 
     const relationRefs = unique([
       ...projectRelationRefs,
@@ -155,7 +184,7 @@ export class ControlContextService {
     ]);
 
     const environmentRefs = unique([
-      ...annotationRefs(project, environmentAnnotation),
+      ...annotatedEnvironmentRefs,
       ...relationRefs.filter(ref =>
         relatedEntities.some(
           entity =>
@@ -165,7 +194,7 @@ export class ControlContextService {
     ]);
 
     const templateRefs = unique([
-      ...annotationRefs(project, templateAnnotation),
+      ...annotatedTemplateRefs,
       ...relationRefs.filter(ref =>
         relatedEntities.some(
           entity =>
@@ -192,6 +221,11 @@ export class ControlContextService {
         catalogEntityRef: stringifyEntityRef(project),
       },
       environmentRefs,
+      environments: relatedEntities
+        .filter(isEnvironmentEntity)
+        .filter(entity => environmentRefs.includes(stringifyEntityRef(entity)))
+        .map(environmentControlContext)
+        .sort((a, b) => a.entityRef.localeCompare(b.entityRef)),
       templateRefs,
       allowedActions: this.allowedActionsForProject(project),
       recentOperationLogs,
@@ -218,12 +252,18 @@ export class ControlContextService {
       );
     }
 
+    const environment = options.request.environmentRef
+      ? await this.catalog.getEntityByRef(options.request.environmentRef, {
+          credentials: options.credentials,
+        })
+      : undefined;
     const projectRef = stringifyEntityRef(project);
     const actor = auditActorForCredentials(options.credentials);
     const ownerRefs = relationTargets(project, 'ownedBy');
-    const productionLike = isProductionLikeEnvironment(
-      options.request.environmentRef,
-    );
+    const productionLike = isProductionLikeEnvironment({
+      environmentRef: options.request.environmentRef,
+      criticality: environment?.metadata.annotations?.[criticalityAnnotation],
+    });
     const policyDecision = this.policyDecisionForTemplatePlan({
       ownerRefs,
       productionLike,

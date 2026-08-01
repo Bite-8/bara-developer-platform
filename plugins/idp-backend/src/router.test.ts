@@ -11,6 +11,7 @@ describe('createRouter', () => {
         projectRef: 'system:default/examples',
         project: { ownerRefs: ['group:default/guests'] },
         environmentRefs: [],
+        environments: [],
         templateRefs: ['template:default/example-nodejs-template'],
         allowedActions: {
           observe: 'allowed',

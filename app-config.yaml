@@ -109,6 +109,10 @@ catalog:
     - type: file
       target: ../../examples/entities.yaml
 
+    # Bara Project / Environment desired-state fixture
+    - type: file
+      target: ../../examples/idp-projects/location.yaml
+
     # Local example template
     - type: file
       target: ../../examples/template/template.yaml

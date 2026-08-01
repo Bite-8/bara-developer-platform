@@ -117,6 +117,12 @@ export type DesiredStateContract = {
   notes: string[];
 };
 
+export type EnvironmentControlContext = {
+  entityRef: string;
+  ownerRefs: string[];
+  criticality?: string;
+};
+
 export type ProjectControlContext = {
   projectRef: string;
   project: {
@@ -125,6 +131,7 @@ export type ProjectControlContext = {
     catalogEntityRef?: string;
   };
   environmentRefs: string[];
+  environments: EnvironmentControlContext[];
   templateRefs: string[];
   allowedActions: AllowedActionSummary;
   recentOperationLogs: OperationLogRecord[];

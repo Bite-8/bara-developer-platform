@@ -1,0 +1,8 @@
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: bara-idp-projects
+  description: Bara Project and Environment desired-state catalog fixtures
+spec:
+  targets:
+    - ./payment-platform.yaml
