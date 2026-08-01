@@ -17,7 +17,7 @@
 
 ## 開発サイクル
 
-メイン agent は `$run-idp-development-cycle` に従い、未完了 PR / Issue の再開を最初に確認してから、探索、選定、実施、レビュー、merge 評価を行います。既定では 1 delivery unit だけを選びます。複数 delivery unit は、互いに利用者価値と変更範囲が独立し、所有ファイルまたは worktree を分けられ、各 unit を個別に検証・review・merge 判断でき、並行化が cycle time を短縮する場合に限ります。該当する unit がない場合は、0 件の根拠と次に必要な観測条件を Issue に残します。
+メイン agent は `$run-idp-development-cycle` に従い、未完了 PR / Issue の再開を最初に確認してから、粗いゴールを initiative、decision-ready backlog、coherent delivery wave、個別 delivery unit に分解し、実施、レビュー、merge 評価を行います。1 delivery unit は 1 Issue、原則 1 PR、独立した fixed-SHA gate を持ちますが、1 回の開発依頼は 1 PR で終了しません。依存が解けた ready unit は ownership または worktree を分け、利用可能な subagent 枠で原則並行実施します。各 PR の review / merge も全体を待たず並行し、枠が空いたら次の ready unit を補充します。実依存のある unit だけを predecessor merge 後に順次進め、wave 全体の収束まで継続します。詳細は `docs/how-to-plan-delivery-waves.md` を参照します。
 
 両 reviewer は実装者の自己検証を転載せず、同じ immutable head SHA を確認して `PASS` / `FAIL` / `UNVERIFIED` の verdict を返します。PR head が変わった場合、その head への必要な再レビューが完了するまで merge しません。メイン agent だけが `$merge-reviewed-pr` を使って最終的な merge または保留を判断します。GitHub の `Approve` 操作はこの運用の必須条件ではありません。
 

@@ -35,6 +35,7 @@ AI-native developer control plane の MVP を定義し、その最小の実装�
 製品の方向性、次の成果、Issue、実装方針を検討する前に、以下を確認します。
 
 - [製品方針: AI-native control plane charter](docs/product/ai-native-control-plane-charter.md)
+- [AI-native UX principles](docs/product/ai-native-ux-principles.md)
 - [ADR 0001: IDP 管理モデルの source of truth](docs/adr/0001-idp-management-source-of-truth.md)
 - [ADR 0002: AI action approval boundary](docs/adr/0002-ai-action-approval-boundary.md)
 - [Backstage 拡張方針](docs/backstage-extension-policy.md)

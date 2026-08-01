@@ -23,6 +23,8 @@ IDP 独自機能は、原則として `plugins/` 配下の plugin / module / ext
 - Backstage アップデート時に、生成アプリとの差分を追いやすくする。
 - 独自機能の影響範囲を plugin / module / extension の境界内に限定する。
 
+Backstage の標準 UI と component は一貫性、accessibility、OSS plugin 互換性の baseline として活用するが、Bara の対象利用者にとって最適な UX であるとは仮定しない。代表 journey の摩擦と成果を観測し、`docs/product/ai-native-ux-principles.md` に従って plugin / module / extension / configuration 内で情報階層や interaction の仮説を検証する。標準 UI からの逸脱を避けることと、標準 journey を無検証で固定することを混同しない。
+
 ## `packages/app` の扱い
 
 `packages/app` は frontend app の配線層として扱う。変更は、plugin 登録、route、navigation / sidebar、theme、app-level extension、設定接続など、Backstage アプリとして必要な合成に限定する。

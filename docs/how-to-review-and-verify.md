@@ -30,6 +30,10 @@ PR 本文の Review guide には、受入条件ごとに次を記載します。
 
 PR 本文には PR head commit SHA も残します。スクリーンショット、Playwright trace、CI artifact は補助証跡として有用ですが、再現手順の代わりにはなりません。PR 固有 evidence は対象 PR への追加 commit にせず、PR body、Issue、または reviewed SHA 付き GitHub comment / check に残します。
 
+利用者向け変更では、製品所有者が preview URL または安全なローカル fixture から短時間で実行できる owner acceptance journey を Review guide に含めます。自動 test と独立 reviewer の結果は品質判断を支えますが、所有者が代表的な利用者価値を観測する入口の代わりにはなりません。
+
+production、永続データ、認証、権限、外部連携、migration、deployment に影響する変更では、relevant な configuration / Secret 境界、rollout、rollback または forward recovery、backup / restore、health / observability、staging smoke test を Review guide または残余リスクへ記載します。非該当項目は理由を明示します。本番操作は review 手順に含めません。
+
 ## ローカル確認
 
 Node.js 22 または 24 と Corepack を使います。グローバルの `yarn` がない環境では、以下のように Corepack 経由で実行します。
@@ -76,11 +80,13 @@ merge 後は関連 Issue に merge commit、利用者価値、残余リスク、
 
 `AGENTS.md`、project-local skill、custom agent、review / merge contract を実質的に変えた場合は、fresh session または最小コンテキストの subagent で次を確認する。本番副作用、追加購入、権限変更は行わない。
 
-1. 未完了 PR がある状態で「開発して」と依頼し、新規 Issue を増やさず、その PR の current SHA、review、CI、merge gate の不足を再開する。
-2. 未完了 PR がなく decision-ready Issue がある状態で依頼し、既定で 1 delivery unit だけを選ぶ。
-3. decision-ready backlog がない状態で依頼し、read-only discovery の後に selection だけが Issue を作成・更新する。
+1. 未完了 PR がある状態で「開発して」と依頼し、新規 discovery より先に、その PR の current SHA、review、CI、merge gate の不足を再開する。収束後は同じ delivery wave の ready unit へ継続する。
+2. 未完了 PR がなく、独立 unit と依存 unit を含む decision-ready backlog がある状態で依頼し、initiative と coherent delivery wave を作り、独立 unit は ownership を分けて並行、依存 unit は predecessor merge 後に順次実施する。
+3. decision-ready backlog がない粗いゴールで依頼し、read-only discovery の後に selection だけが initiative、delivery wave、選外を含む decision-ready backlog の Issue を作成・更新する。
+4. 最初の PR が merge / hold になった状態で、ready な次 unit があれば 1 PR 完了を終了条件にせず継続し、全 unit の収束または明示的 block で終了する。
+5. 利用者向けまたは production 影響のある候補で、owner acceptance と relevant な rollout / rollback / operability evidence が受入条件と PR Review guide に現れる。
 
-全ケースで、reviewer が対象 PR head を変更しないこと、SHA が変われば旧 verdict を流用しないこと、merge / hold 後に関連 Issue が収束することを確認する。forward test が外部状態を変更する場合は、専用 fixture repository または dry-run を使い、実環境で安全に再現できない項目を `UNVERIFIED` として残す。
+全ケースで、各 delivery unit が独立した Issue / PR / gate を持つこと、reviewer が対象 PR head を変更しないこと、SHA が変われば旧 verdict を流用しないこと、unit の merge / hold 後に dependency graph と関連 Issue が収束することを確認する。forward test が外部状態を変更する場合は、専用 fixture repository または dry-run を使い、実環境で安全に再現できない項目を `UNVERIFIED` として残す。
 
 ## CI
 

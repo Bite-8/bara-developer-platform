@@ -5,7 +5,7 @@ description: Internal run-idp-development-cycle step. Explore the running Intern
 
 # IDP 機会を探索して read-only 候補を提案する
 
-Bara Developer Platform にとって検証価値のある UI / UX、機能、連携、保守の機会を探索し、根拠の強さに応じて 0〜5 件の候補を read-only レポートとして提案する。この skill は GitHub Issue を作成・更新・close しない。Issue mutation は `$select-product-outcome` だけが担う。機能名だけを列挙せず、対象利用者の課題、現物観測、外部シグナル、期待価値、次に必要な判断を結び付ける。候補の採否と優先順位は、後続の選定で判断する。
+Bara Developer Platform にとって検証価値のある UI / UX、AI-assisted journey、機能、連携、validation、operability、保守の機会を探索し、根拠の強さに応じて 0〜8 件の候補を read-only レポートとして提案する。この skill は GitHub Issue を作成・更新・close しない。Issue mutation は `$select-product-outcome` だけが担う。機能名だけを列挙せず、対象利用者の課題、現物観測、外部シグナル、期待価値、次に必要な判断を結び付ける。候補の採否、initiative への集約、優先順位、delivery wave は後続の選定で判断する。
 
 この skill は `$run-idp-development-cycle` から明示的に呼ばれる内部手順である。ユーザーの一般的な「開発して」依頼から単独で暗黙起動しない。
 
@@ -20,6 +20,10 @@ Bara Developer Platform にとって検証価値のある UI / UX、機能、連
 - 安全な自動化: evidence、plan、risk、approval、execution result、audit trail がつながっていない箇所。
 - control-plane object: Project、Environment、Template、Intent、Plan、ActionRun、OperationLog のいずれかで current state、allowed action、owner が分からない箇所。
 - Backstage ecosystem: Catalog、Scaffolder、Permission、Search、TechDocs、公式 plugin の未活用または拡張で解くべき差分。
+- AI-assisted journey: 選択中の Project / Environment context、evidence、risk、approval、Plan、execution、audit が一続きになっているか。汎用 chat の有無ではなく、利用者が安全に次の行動へ進めるか。
+- Delivery / operability: owner が変更を preview で受け入れられるか。本番候補に rollout、rollback、永続化、認証、権限、監視、backup / restore の明白な欠落がないか。
+
+Backstage 標準 UI は一貫性、accessibility、OSS plugin 互換性の baseline であり、Bara の最適 UX であるとは仮定しない。`docs/product/ai-native-ux-principles.md` に従い、代表 journey の current baseline と変更仮説を比較する。見た目の好みだけで全面 redesign を候補化せず、task success、time to next action、迷い・backtrack、risk / approval 理解、error recovery のどれを改善するかを明示する。
 
 UX と運用負荷が衝突するときは、IDP 利用者がより確実に価値を得る UX を優先する。運用改善だけを候補にするときも、その改善が利用者価値、安全性、または継続的な提供能力へどう接続するかを明示する。
 
@@ -95,4 +99,9 @@ UX と運用負荷が衝突するときは、IDP 利用者がより確実に価�
 - 既存 Issue:
 - Issue 化の推奨: 新規作成 / 既存 Issue 更新 / defer
 - 推奨: delivery candidate / discovery candidate / defer
+
+## Initiative への集約案
+
+| Initiative 仮説 | 関連候補 | 共通する利用者成果 | 主な依存関係 | 推奨する最初の wave |
+| --------------- | -------- | ------------------ | ------------ | ------------------- |
 ```

@@ -19,6 +19,7 @@ Review method:
 - Use the Review guide to reproduce relevant acceptance conditions from the PR head. Do not mark a condition verified solely because the Implementer reported it.
 - Run or create focused checks as needed, including material negative or boundary cases for changed APIs and domain logic. For UI work, observe the representative user journey in a running application when local execution is possible.
 - Treat missing evidence, an unreproducible procedure, or an unavailable required dependency as a finding when it affects confidence.
+- When the change affects production, persistent data, authentication, permissions, external integrations, migrations, or deployment, independently assess relevant rollout, rollback or forward recovery, backup / restore, observability, and Secret boundaries. Do not execute production operations.
 - Distinguish confirmed findings, material uncertainty, and non-blocking observations. Prefer high-signal findings over style preferences.
 - Use any sandbox-permitted operation required to gather evidence, without recording Secret, token, or personal-data values.
 
