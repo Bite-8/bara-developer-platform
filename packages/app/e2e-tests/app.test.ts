@@ -77,8 +77,16 @@ test('IDP Project detail should show recommended action before backend control c
 
   await page.getByRole('button', { name: 'Create plan preview' }).click();
   await expect(page).toHaveURL(
-    /\/idp\/templates\/node-api\/run\?projectId=examples/,
+    /\/idp\/templates\/node-api\/run\?projectId=examples&environmentId=examples-dev/,
   );
   await expect(page.getByText('Step: input')).toBeVisible();
-  await expect(page.getByText('Create plan preview')).toBeVisible();
+  const selectInputs = page.locator('input.MuiSelect-nativeInput');
+  await expect(selectInputs.nth(0)).toHaveValue('examples');
+  await expect(selectInputs.nth(1)).toHaveValue('examples-dev');
+
+  await page.getByLabel('Service name').fill('examples-api');
+  await page.getByRole('button', { name: 'Create plan preview' }).click();
+  await expect(page.getByText('Expected change')).toBeVisible();
+  await expect(page.getByText('Policy:', { exact: false })).toBeVisible();
+  await expect(page.getByText('Risk:', { exact: false })).toBeVisible();
 });

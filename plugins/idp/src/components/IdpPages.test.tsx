@@ -40,6 +40,20 @@ const environment: IdpEnvironment = {
   updatedAt: '2026-07-31T00:00:00Z',
 };
 
+const unrelatedEnvironment: IdpEnvironment = {
+  id: 'payment-prod',
+  projectId: 'payment-api',
+  name: 'payment-prod',
+  type: 'prod',
+  deploymentStatus: 'running',
+  appStatus: 'running',
+  infraStatus: 'running',
+  alertStatus: 'normal',
+  relatedCatalogEntityRefs: ['resource:default/payment-prod'],
+  createdAt: '2026-07-31T00:00:00Z',
+  updatedAt: '2026-07-31T00:00:00Z',
+};
+
 const template: IdpTemplate = {
   id: 'node-api',
   name: 'Node API',
@@ -397,6 +411,87 @@ describe('TemplateRunContent', () => {
     expect(selectInputs[0]).toHaveProperty('value', 'examples');
     expect(selectInputs[1]).toHaveProperty('value', 'examples-dev');
     expect(screen.getByText('Create plan preview')).toBeTruthy();
+  });
+
+  it('drops an Environment query string that is unrelated to the selected Project before preview creation', async () => {
+    const controlContextApi = {
+      getProjectControlContext: jest.fn(),
+      createTemplatePlanPreview: jest.fn().mockResolvedValue({
+        plan: {
+          id: 'preview-node',
+          kind: 'Plan' as const,
+          planRef: 'plan:preview-node',
+          actor: { entityRef: 'user:default/guest', type: 'user' as const },
+          targetEntityRef: 'system:default/examples',
+          eventType: 'plan.created' as const,
+          createdAt: '2026-08-01T00:00:00.000Z',
+          status: 'planned' as const,
+          expectedChangeSummary:
+            'Preview node-api for examples without an environment target.',
+          requiredApproval: 'none' as const,
+        },
+        operationLog: {
+          id: 'log-preview-node',
+          operationLogRef: 'operation-log:preview-node',
+          actor: { entityRef: 'user:default/guest', type: 'user' as const },
+          targetEntityRef: 'system:default/examples',
+          eventType: 'plan.created' as const,
+          createdAt: '2026-08-01T00:00:00.000Z',
+          status: 'planned' as const,
+          message: 'Plan preview planned.',
+        },
+      }),
+    };
+
+    const rendered = await renderInTestApp(
+      <Routes>
+        <Route
+          path="/idp/templates/:templateId/run"
+          element={
+            <TemplateRunContent
+              projects={[project]}
+              environments={[environment, unrelatedEnvironment]}
+              templates={[template]}
+              operationLogs={[] as IdpOperationLog[]}
+              executions={[] as IdpTemplateExecution[]}
+              refresh={jest.fn()}
+              controlContextApi={controlContextApi}
+            />
+          }
+        />
+      </Routes>,
+      {
+        routeEntries: [
+          '/idp/templates/node-api/run?projectId=examples&environmentId=payment-prod',
+        ],
+      },
+    );
+
+    await waitFor(() => {
+      const selectInputs = rendered.container.querySelectorAll(
+        'input.MuiSelect-nativeInput',
+      );
+      expect(selectInputs[0]).toHaveProperty('value', 'examples');
+      expect(selectInputs[1]).toHaveProperty('value', '');
+    });
+
+    fireEvent.click(screen.getByText('Create plan preview'));
+
+    await waitFor(() => {
+      expect(controlContextApi.createTemplatePlanPreview).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectRef: 'system:default/examples',
+          templateRef: 'template:default/node-api',
+        }),
+      );
+    });
+    expect(
+      controlContextApi.createTemplatePlanPreview,
+    ).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        environmentRef: 'resource:default/payment-prod',
+      }),
+    );
   });
 
   it('creates and displays a side-effect-free Plan preview instead of executing a template', async () => {

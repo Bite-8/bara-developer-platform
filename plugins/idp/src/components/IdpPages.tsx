@@ -603,11 +603,7 @@ const findPlanPreviewEnvironment = (
   environments: IdpEnvironment[],
   context?: IdpProjectControlContext,
 ) => {
-  const projectEnvironments = environments.filter(
-    environment =>
-      environment.projectId === project.id ||
-      project.environmentIds.includes(environment.id),
-  );
+  const projectEnvironments = relatedProjectEnvironments(project, environments);
   const contextEnvironment = context?.environmentRefs
     .map(ref =>
       projectEnvironments.find(
@@ -618,6 +614,16 @@ const findPlanPreviewEnvironment = (
 
   return contextEnvironment ?? projectEnvironments[0];
 };
+
+const relatedProjectEnvironments = (
+  project: IdpProject,
+  environments: IdpEnvironment[],
+) =>
+  environments.filter(
+    environment =>
+      environment.projectId === project.id ||
+      project.environmentIds.includes(environment.id),
+  );
 
 const planPreviewPath = ({
   project,
@@ -1525,18 +1531,40 @@ export const TemplateRunContent = ({
     'idle' | 'creating' | 'error'
   >('idle');
   const [previewError, setPreviewError] = useState('');
-  const filteredEnvironments = useMemo(
-    () =>
-      projectId
-        ? environments.filter(
-            environment => environment.projectId === projectId,
-          )
-        : environments,
-    [environments, projectId],
-  );
+  const filteredEnvironments = useMemo(() => {
+    const project = projects.find(candidate => candidate.id === projectId);
+    return project ? relatedProjectEnvironments(project, environments) : [];
+  }, [environments, projectId, projects]);
+  useEffect(() => {
+    if (!projects.length || !environments.length) {
+      return;
+    }
+
+    const project = projects.find(candidate => candidate.id === projectId);
+    if (!project) {
+      if (projectId) {
+        setProjectId('');
+      }
+      if (environmentId) {
+        setEnvironmentId('');
+      }
+      return;
+    }
+
+    const projectEnvironments = relatedProjectEnvironments(
+      project,
+      environments,
+    );
+    if (
+      environmentId &&
+      !projectEnvironments.some(environment => environment.id === environmentId)
+    ) {
+      setEnvironmentId('');
+    }
+  }, [environmentId, environments, projectId, projects]);
   if (!t) return <EmptyState title="Template not found" />;
   const selectedProject = projects.find(project => project.id === projectId);
-  const selectedEnvironment = environments.find(
+  const selectedEnvironment = filteredEnvironments.find(
     environment => environment.id === environmentId,
   );
   const selectedProjectRef = selectedProject
