@@ -32,7 +32,7 @@ test('App should render the welcome page', async ({ page }) => {
   ).toBeVisible();
 });
 
-test('IDP Project detail should show backend control context', async ({
+test('IDP Project detail should show recommended action before backend control context', async ({
   page,
 }) => {
   await page.goto('/');
@@ -49,9 +49,22 @@ test('IDP Project detail should show backend control context', async ({
   ).toBeVisible();
   await page.goto('/idp/projects/examples');
 
-  await expect(
-    page.getByRole('heading', { name: 'Backend control context' }),
-  ).toBeVisible();
+  const recommendedHeading = page.getByRole('heading', {
+    name: 'Recommended next action',
+  });
+  const backendHeading = page.getByRole('heading', {
+    name: 'Backend control context',
+  });
+  await expect(recommendedHeading).toBeVisible();
+  await expect(backendHeading).toBeVisible();
+  const headingOrder = await page
+    .getByRole('heading')
+    .evaluateAll(headings =>
+      headings.map(heading => heading.textContent?.trim() ?? ''),
+    );
+  expect(headingOrder.indexOf('Recommended next action')).toBeLessThan(
+    headingOrder.indexOf('Backend control context'),
+  );
   await expect(
     page.getByRole('heading', { name: 'system:default/examples' }),
   ).toBeVisible();
@@ -61,4 +74,11 @@ test('IDP Project detail should show backend control context', async ({
     page.getByText('template:default/example-nodejs-template'),
   ).toBeVisible();
   await expect(page.getByText('Approval summary')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Create plan preview' }).click();
+  await expect(page).toHaveURL(
+    /\/idp\/templates\/node-api\/run\?projectId=examples/,
+  );
+  await expect(page.getByText('Step: input')).toBeVisible();
+  await expect(page.getByText('Create plan preview')).toBeVisible();
 });

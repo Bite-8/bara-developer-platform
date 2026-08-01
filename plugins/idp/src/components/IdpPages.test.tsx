@@ -179,9 +179,86 @@ describe('ProjectDetailContent', () => {
     expect(
       screen.getByText('template:default/example-nodejs-template'),
     ).toBeTruthy();
-    expect(screen.getByText('plan:examples-latest')).toBeTruthy();
-    expect(screen.getByText('action-run:examples-dry-run')).toBeTruthy();
-    expect(screen.getByText('Backend plan created')).toBeTruthy();
+    expect(screen.getAllByText('plan:examples-latest').length).toBeGreaterThan(
+      0,
+    );
+    expect(
+      screen.getAllByText('action-run:examples-dry-run').length,
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText('Backend plan created').length).toBeGreaterThan(
+      0,
+    );
+  });
+
+  it('renders a user-facing recommended next action before backend control context', async () => {
+    await renderProjectDetail();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { name: 'Recommended next action' }),
+      ).toBeTruthy();
+    });
+
+    const nextActionHeading = screen.getByRole('heading', {
+      name: 'Recommended next action',
+    });
+    const backendHeading = screen.getByRole('heading', {
+      name: 'Backend control context',
+    });
+    expect(
+      nextActionHeading.compareDocumentPosition(backendHeading) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Review the latest Plan, then create a fresh preview if the desired change has moved.',
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        /does not enforce policy, approve changes, or start execution/,
+      ),
+    ).toBeTruthy();
+  });
+
+  it('summarizes the latest plan, runtime log, risk, and approval context in the recommended action', async () => {
+    await renderProjectDetail({
+      contextPromise: Promise.resolve(
+        controlContext({
+          latestPlan: {
+            ...controlContext().latestPlan!,
+            requiredApproval: 'environment-owner',
+            riskSummary: {
+              level: 'medium',
+              summary: 'Development environment still needs owner review.',
+              factors: ['owner-review'],
+            },
+          },
+        }),
+      ),
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { name: 'Recommended next action' }),
+      ).toBeTruthy();
+    });
+
+    expect(screen.getAllByText('plan:examples-latest').length).toBeGreaterThan(
+      0,
+    );
+    expect(screen.getByText('Create a reviewable plan preview')).toBeTruthy();
+    expect(
+      screen.getByText('Required approval: environment-owner'),
+    ).toBeTruthy();
+    expect(screen.getByText('Risk: medium')).toBeTruthy();
+    expect(screen.getAllByText('Backend plan created').length).toBeGreaterThan(
+      0,
+    );
+    expect(screen.getByText('Plan: allowed · Dry-run: allowed')).toBeTruthy();
+    expect(
+      screen.getAllByText('Propose change: needs-approval').length,
+    ).toBeGreaterThan(0);
   });
 
   it('shows loading and empty runtime states without using local runtime mock data', async () => {
@@ -219,6 +296,17 @@ describe('ProjectDetailContent', () => {
         'No latest action run is recorded for this Project yet.',
       ),
     ).toBeTruthy();
+    expect(
+      screen.getByText(
+        'No latest Plan is recorded yet. Start with a Plan preview before any side-effecting action.',
+      ),
+    ).toBeTruthy();
+    const planPreviewLink = screen.getByRole('button', {
+      name: 'Create plan preview',
+    });
+    expect(planPreviewLink.getAttribute('href')).toBe(
+      '/idp/templates/node-api/run?projectId=examples&environmentId=examples-dev',
+    );
   });
 
   it('shows backend control context errors', async () => {
@@ -234,6 +322,18 @@ describe('ProjectDetailContent', () => {
       ).toBeTruthy();
     });
     expect(screen.getByText('not found')).toBeTruthy();
+    expect(
+      screen.getByText(
+        /Backend context is unavailable, so use the Template run path/,
+      ),
+    ).toBeTruthy();
+    expect(
+      screen
+        .getByRole('button', { name: 'Create plan preview' })
+        .getAttribute('href'),
+    ).toBe(
+      '/idp/templates/node-api/run?projectId=examples&environmentId=examples-dev',
+    );
   });
 
   it('describes allowed actions as an approval summary, not enforcement', async () => {
@@ -243,7 +343,9 @@ describe('ProjectDetailContent', () => {
       expect(screen.getByText('Approval summary')).toBeTruthy();
     });
 
-    expect(screen.getByText('Propose change: needs-approval')).toBeTruthy();
+    expect(
+      screen.getAllByText('Propose change: needs-approval').length,
+    ).toBeGreaterThan(0);
     expect(screen.getByText('Execute production: denied')).toBeTruthy();
     expect(
       screen.getByText(
@@ -259,6 +361,44 @@ describe('ProjectDetailContent', () => {
 });
 
 describe('TemplateRunContent', () => {
+  it('prefills Project and Environment from a recommended action query string', async () => {
+    const controlContextApi = {
+      getProjectControlContext: jest.fn(),
+      createTemplatePlanPreview: jest.fn(),
+    };
+
+    const rendered = await renderInTestApp(
+      <Routes>
+        <Route
+          path="/idp/templates/:templateId/run"
+          element={
+            <TemplateRunContent
+              projects={[project]}
+              environments={[environment]}
+              templates={[template]}
+              operationLogs={[] as IdpOperationLog[]}
+              executions={[] as IdpTemplateExecution[]}
+              refresh={jest.fn()}
+              controlContextApi={controlContextApi}
+            />
+          }
+        />
+      </Routes>,
+      {
+        routeEntries: [
+          '/idp/templates/node-api/run?projectId=examples&environmentId=examples-dev',
+        ],
+      },
+    );
+
+    const selectInputs = rendered.container.querySelectorAll(
+      'input.MuiSelect-nativeInput',
+    );
+    expect(selectInputs[0]).toHaveProperty('value', 'examples');
+    expect(selectInputs[1]).toHaveProperty('value', 'examples-dev');
+    expect(screen.getByText('Create plan preview')).toBeTruthy();
+  });
+
   it('creates and displays a side-effect-free Plan preview instead of executing a template', async () => {
     const preview = {
       plan: {

@@ -1,5 +1,11 @@
 import { PropsWithChildren, useEffect, useMemo, useState } from 'react';
-import { Link, Route, Routes, useParams } from 'react-router-dom';
+import {
+  Link,
+  Route,
+  Routes,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
 import { Content, Header, Page } from '@backstage/core-components';
 import {
   discoveryApiRef,
@@ -251,6 +257,11 @@ const templateName = (templates: IdpTemplate[], id: string) =>
 const projectControlRef = (project: IdpProject) =>
   project.relatedCatalogEntityRefs.find(ref => ref.startsWith('system:')) ??
   `system:default/${project.id}`;
+const templateControlRef = (template: IdpTemplate) =>
+  template.scaffolderTemplateRef ?? `template:default/${template.id}`;
+const environmentControlRef = (environment: IdpEnvironment) =>
+  environment.relatedCatalogEntityRefs[0] ??
+  `resource:default/${environment.id}`;
 const latest = <T extends { updatedAt?: string; createdAt: string }>(
   items: T[],
 ) =>
@@ -567,10 +578,248 @@ const RefChips = ({ refs, empty }: { refs: string[]; empty: string }) => {
   );
 };
 
+const findPlanPreviewTemplate = (
+  project: IdpProject,
+  templates: IdpTemplate[],
+  context?: IdpProjectControlContext,
+) => {
+  const enabledTemplates = templates.filter(template => template.enabled);
+  const contextTemplate = context?.templateRefs
+    .map(ref =>
+      enabledTemplates.find(template => templateControlRef(template) === ref),
+    )
+    .find(Boolean);
+
+  return (
+    contextTemplate ??
+    project.templateIds
+      .map(id => enabledTemplates.find(template => template.id === id))
+      .find(Boolean)
+  );
+};
+
+const findPlanPreviewEnvironment = (
+  project: IdpProject,
+  environments: IdpEnvironment[],
+  context?: IdpProjectControlContext,
+) => {
+  const projectEnvironments = environments.filter(
+    environment =>
+      environment.projectId === project.id ||
+      project.environmentIds.includes(environment.id),
+  );
+  const contextEnvironment = context?.environmentRefs
+    .map(ref =>
+      projectEnvironments.find(
+        environment => environmentControlRef(environment) === ref,
+      ),
+    )
+    .find(Boolean);
+
+  return contextEnvironment ?? projectEnvironments[0];
+};
+
+const planPreviewPath = ({
+  project,
+  template,
+  environment,
+}: {
+  project: IdpProject;
+  template: IdpTemplate;
+  environment?: IdpEnvironment;
+}) => {
+  const params = new URLSearchParams({ projectId: project.id });
+  if (environment) {
+    params.set('environmentId', environment.id);
+  }
+  return `/idp/templates/${template.id}/run?${params.toString()}`;
+};
+
+const RecommendedNextActionPanel = ({
+  project,
+  environments,
+  templates,
+  status,
+  context,
+}: {
+  project: IdpProject;
+  environments: IdpEnvironment[];
+  templates: IdpTemplate[];
+  status: 'loading' | 'success' | 'error';
+  context?: IdpProjectControlContext;
+}) => {
+  const classes = useStyles();
+  const template = findPlanPreviewTemplate(project, templates, context);
+  const environment = findPlanPreviewEnvironment(
+    project,
+    environments,
+    context,
+  );
+  const latestLog = context?.recentOperationLogs[0];
+  const riskSummary =
+    context?.latestPlan?.riskSummary ??
+    context?.latestActionRun?.riskSummary ??
+    latestLog?.riskSummary;
+  const actionRun = context?.latestActionRun;
+  const cta = template ? (
+    <Button
+      component={Link}
+      to={planPreviewPath({ project, template, environment })}
+      variant="contained"
+      color="primary"
+      startIcon={<RocketLaunchIcon />}
+    >
+      Create plan preview
+    </Button>
+  ) : (
+    <Button
+      component={Link}
+      to="/idp/templates"
+      variant="contained"
+      color="primary"
+      startIcon={<RocketLaunchIcon />}
+    >
+      Open Templates
+    </Button>
+  );
+
+  if (status === 'loading') {
+    return (
+      <SectionCard title="Recommended next action" action={cta}>
+        <Typography className={classes.muted}>
+          Loading backend context before recommending the next safe step. The
+          manual Template run path remains available.
+        </Typography>
+      </SectionCard>
+    );
+  }
+
+  if (status === 'error' || !context) {
+    return (
+      <SectionCard title="Recommended next action" action={cta}>
+        <Typography>
+          Backend context is unavailable, so use the Template run path to create
+          a side-effect-free Plan preview for this Project.
+        </Typography>
+        <Typography className={classes.muted}>
+          Project context is preserved where a local Template match is
+          available; no policy or approval enforcement is inferred here.
+        </Typography>
+      </SectionCard>
+    );
+  }
+
+  return (
+    <SectionCard title="Recommended next action" action={cta}>
+      <Box className={classes.cardList}>
+        <Box>
+          <Typography variant="h6">
+            {context.latestPlan
+              ? 'Review the latest Plan, then create a fresh preview if the desired change has moved.'
+              : 'Create a side-effect-free Plan preview for this Project.'}
+          </Typography>
+          <Typography className={classes.muted}>
+            This recommendation summarizes existing backend context only. It
+            does not enforce policy, approve changes, or start execution.
+          </Typography>
+        </Box>
+        <Box className={classes.contextGrid}>
+          <Box className={classes.miniCard}>
+            <Typography variant="subtitle2" className={classes.muted}>
+              Latest plan
+            </Typography>
+            {context.latestPlan ? (
+              <>
+                <Typography variant="h6">
+                  {context.latestPlan.planRef}
+                </Typography>
+                <Typography>
+                  {context.latestPlan.expectedChangeSummary}
+                </Typography>
+                <Box mt={1} className={classes.metaGrid}>
+                  <StatusChip status={context.latestPlan.status} />
+                  <Chip
+                    size="small"
+                    className={classes.chip}
+                    label={`Required approval: ${context.latestPlan.requiredApproval}`}
+                  />
+                  <Chip
+                    size="small"
+                    className={classes.chip}
+                    label={`Risk: ${riskSummary?.level ?? 'unknown'}`}
+                  />
+                </Box>
+              </>
+            ) : (
+              <Typography className={classes.muted}>
+                No latest Plan is recorded yet. Start with a Plan preview before
+                any side-effecting action.
+              </Typography>
+            )}
+          </Box>
+          <Box className={classes.miniCard}>
+            <Typography variant="subtitle2" className={classes.muted}>
+              Latest runtime log
+            </Typography>
+            {latestLog ? (
+              <>
+                <Typography variant="h6">
+                  {latestLog.operationLogRef}
+                </Typography>
+                <Typography>{latestLog.message}</Typography>
+                <Typography className={classes.muted}>
+                  {latestLog.status} · {latestLog.eventType}
+                </Typography>
+              </>
+            ) : (
+              <Typography className={classes.muted}>
+                No runtime log has been recorded for this Project yet.
+              </Typography>
+            )}
+          </Box>
+          <Box className={classes.miniCard}>
+            <Typography variant="subtitle2" className={classes.muted}>
+              Approval and action context
+            </Typography>
+            <Typography>
+              Plan: {context.allowedActions.plan} · Dry-run:{' '}
+              {context.allowedActions.dryRun}
+            </Typography>
+            <Typography>
+              Propose change: {context.allowedActions.proposeChange}
+            </Typography>
+            {actionRun ? (
+              <Typography className={classes.muted}>
+                Latest action run: {actionRun.actionRunRef} · {actionRun.mode} ·{' '}
+                {actionRun.status}
+              </Typography>
+            ) : (
+              <Typography className={classes.muted}>
+                No action run has been recorded yet.
+              </Typography>
+            )}
+          </Box>
+        </Box>
+        <Typography className={classes.muted}>
+          Preview target: {template ? template.name : 'choose a Template'} for{' '}
+          {project.name}
+          {environment ? ` / ${environment.name}` : ''}.
+        </Typography>
+      </Box>
+    </SectionCard>
+  );
+};
+
 export const ProjectControlContextSection = ({
+  project,
+  environments,
+  templates,
   projectRef,
   controlContextApi,
 }: {
+  project: IdpProject;
+  environments: IdpEnvironment[];
+  templates: IdpTemplate[];
   projectRef: string;
   controlContextApi: ControlContextApi;
 }) => {
@@ -610,136 +859,150 @@ export const ProjectControlContextSection = ({
   }, [controlContextApi, projectRef]);
 
   return (
-    <SectionCard title="Backend control context">
-      {status === 'loading' && (
-        <Typography className={classes.muted}>
-          Loading backend control context...
-        </Typography>
-      )}
-      {status === 'error' && (
-        <Box>
-          <StatusChip status="error" />
-          <Typography style={{ marginTop: 12 }}>
-            Backend control context could not be loaded.
-          </Typography>
-          <Typography className={classes.muted}>{errorMessage}</Typography>
-        </Box>
-      )}
-      {status === 'success' && context && (
-        <Box className={classes.cardList}>
-          <Box className={classes.contextGrid}>
-            <Box className={classes.miniCard}>
-              <Typography variant="subtitle2" className={classes.muted}>
-                Project ref
-              </Typography>
-              <Typography variant="h6">{context.projectRef}</Typography>
-              <Typography className={classes.muted}>
-                Owner:{' '}
-                {context.project.ownerRefs.length
-                  ? context.project.ownerRefs.join(', ')
-                  : 'Catalog owner not resolved'}
-              </Typography>
-            </Box>
-            <Box className={classes.miniCard}>
-              <Typography variant="subtitle2" className={classes.muted}>
-                Desired state source
-              </Typography>
-              <Typography variant="h6">
-                {context.desiredState.authoritativeSource}
-              </Typography>
-              <Typography className={classes.muted}>
-                IDP backend desired-state store:{' '}
-                {context.desiredState.idpBackendStoresAuthoritativeDesiredState
-                  ? 'enabled'
-                  : 'disabled'}
-              </Typography>
-            </Box>
-            <Box className={classes.miniCard}>
-              <Typography variant="subtitle2" className={classes.muted}>
-                Latest plan
-              </Typography>
-              {context.latestPlan ? (
-                <>
-                  <Typography variant="h6">
-                    {context.latestPlan.planRef}
-                  </Typography>
-                  <Typography className={classes.muted}>
-                    {context.latestPlan.status} ·{' '}
-                    {context.latestPlan.expectedChangeSummary}
-                  </Typography>
-                </>
-              ) : (
-                <Typography className={classes.muted}>
-                  No latest plan is recorded for this Project yet.
-                </Typography>
-              )}
-            </Box>
-            <Box className={classes.miniCard}>
-              <Typography variant="subtitle2" className={classes.muted}>
-                Latest action run
-              </Typography>
-              {context.latestActionRun ? (
-                <>
-                  <Typography variant="h6">
-                    {context.latestActionRun.actionRunRef}
-                  </Typography>
-                  <Typography className={classes.muted}>
-                    {context.latestActionRun.mode} ·{' '}
-                    {context.latestActionRun.status}
-                  </Typography>
-                </>
-              ) : (
-                <Typography className={classes.muted}>
-                  No latest action run is recorded for this Project yet.
-                </Typography>
-              )}
-            </Box>
-          </Box>
-
-          <Box>
-            <Typography variant="h6">Related Environment refs</Typography>
-            <RefChips
-              refs={context.environmentRefs}
-              empty="No related Environment refs are returned by backend control context."
-            />
-          </Box>
-          <Box>
-            <Typography variant="h6">Related Template refs</Typography>
-            <RefChips
-              refs={context.templateRefs}
-              empty="No related Template refs are returned by backend control context."
-            />
-          </Box>
-          <Box>
-            <Typography variant="h6">Approval summary</Typography>
+    <>
+      <Grid item xs={12}>
+        <RecommendedNextActionPanel
+          project={project}
+          environments={environments}
+          templates={templates}
+          status={status}
+          context={context}
+        />
+      </Grid>
+      <Grid item xs={12}>
+        <SectionCard title="Backend control context">
+          {status === 'loading' && (
             <Typography className={classes.muted}>
-              These values summarize whether future actions are expected to need
-              approval. They are not permission enforcement or completed
-              approval records.
+              Loading backend control context...
             </Typography>
-            <Box mt={1} className={classes.metaGrid}>
-              {actionDecisionKeys.map(action => (
-                <Chip
-                  key={action}
-                  size="small"
-                  className={classes.chip}
-                  label={`${actionLabels[action]}: ${context.allowedActions[action]}`}
-                />
-              ))}
-            </Box>
-            {context.allowedActions.reasons.map(reason => (
-              <Typography key={reason} className={classes.muted}>
-                {reason}
+          )}
+          {status === 'error' && (
+            <Box>
+              <StatusChip status="error" />
+              <Typography style={{ marginTop: 12 }}>
+                Backend control context could not be loaded.
               </Typography>
-            ))}
-          </Box>
-          <Box>
-            <Typography variant="h6">Recent runtime logs</Typography>
-            <ControlLogList logs={context.recentOperationLogs} />
-          </Box>
-        </Box>
-      )}
-    </SectionCard>
+              <Typography className={classes.muted}>{errorMessage}</Typography>
+            </Box>
+          )}
+          {status === 'success' && context && (
+            <Box className={classes.cardList}>
+              <Box className={classes.contextGrid}>
+                <Box className={classes.miniCard}>
+                  <Typography variant="subtitle2" className={classes.muted}>
+                    Project ref
+                  </Typography>
+                  <Typography variant="h6">{context.projectRef}</Typography>
+                  <Typography className={classes.muted}>
+                    Owner:{' '}
+                    {context.project.ownerRefs.length
+                      ? context.project.ownerRefs.join(', ')
+                      : 'Catalog owner not resolved'}
+                  </Typography>
+                </Box>
+                <Box className={classes.miniCard}>
+                  <Typography variant="subtitle2" className={classes.muted}>
+                    Desired state source
+                  </Typography>
+                  <Typography variant="h6">
+                    {context.desiredState.authoritativeSource}
+                  </Typography>
+                  <Typography className={classes.muted}>
+                    IDP backend desired-state store:{' '}
+                    {context.desiredState
+                      .idpBackendStoresAuthoritativeDesiredState
+                      ? 'enabled'
+                      : 'disabled'}
+                  </Typography>
+                </Box>
+                <Box className={classes.miniCard}>
+                  <Typography variant="subtitle2" className={classes.muted}>
+                    Latest plan
+                  </Typography>
+                  {context.latestPlan ? (
+                    <>
+                      <Typography variant="h6">
+                        {context.latestPlan.planRef}
+                      </Typography>
+                      <Typography className={classes.muted}>
+                        {context.latestPlan.status} ·{' '}
+                        {context.latestPlan.expectedChangeSummary}
+                      </Typography>
+                    </>
+                  ) : (
+                    <Typography className={classes.muted}>
+                      No latest plan is recorded for this Project yet.
+                    </Typography>
+                  )}
+                </Box>
+                <Box className={classes.miniCard}>
+                  <Typography variant="subtitle2" className={classes.muted}>
+                    Latest action run
+                  </Typography>
+                  {context.latestActionRun ? (
+                    <>
+                      <Typography variant="h6">
+                        {context.latestActionRun.actionRunRef}
+                      </Typography>
+                      <Typography className={classes.muted}>
+                        {context.latestActionRun.mode} ·{' '}
+                        {context.latestActionRun.status}
+                      </Typography>
+                    </>
+                  ) : (
+                    <Typography className={classes.muted}>
+                      No latest action run is recorded for this Project yet.
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+
+              <Box>
+                <Typography variant="h6">Related Environment refs</Typography>
+                <RefChips
+                  refs={context.environmentRefs}
+                  empty="No related Environment refs are returned by backend control context."
+                />
+              </Box>
+              <Box>
+                <Typography variant="h6">Related Template refs</Typography>
+                <RefChips
+                  refs={context.templateRefs}
+                  empty="No related Template refs are returned by backend control context."
+                />
+              </Box>
+              <Box>
+                <Typography variant="h6">Approval summary</Typography>
+                <Typography className={classes.muted}>
+                  These values summarize whether future actions are expected to
+                  need approval. They are not permission enforcement or
+                  completed approval records.
+                </Typography>
+                <Box mt={1} className={classes.metaGrid}>
+                  {actionDecisionKeys.map(action => (
+                    <Chip
+                      key={action}
+                      size="small"
+                      className={classes.chip}
+                      label={`${actionLabels[action]}: ${context.allowedActions[action]}`}
+                    />
+                  ))}
+                </Box>
+                {context.allowedActions.reasons.map(reason => (
+                  <Typography key={reason} className={classes.muted}>
+                    {reason}
+                  </Typography>
+                ))}
+              </Box>
+              <Box>
+                <Typography variant="h6">Recent runtime logs</Typography>
+                <ControlLogList logs={context.recentOperationLogs} />
+              </Box>
+            </Box>
+          )}
+        </SectionCard>
+      </Grid>
+    </>
   );
 };
 
@@ -986,12 +1249,13 @@ export const ProjectDetailContent = ({
               </Box>
             </SectionCard>
           </Grid>
-          <Grid item xs={12}>
-            <ProjectControlContextSection
-              projectRef={projectControlRef(p)}
-              controlContextApi={controlContextApi}
-            />
-          </Grid>
+          <ProjectControlContextSection
+            project={p}
+            environments={environments}
+            templates={templates}
+            projectRef={projectControlRef(p)}
+            controlContextApi={controlContextApi}
+          />
           <Grid item xs={12}>
             <SectionCard title="Linked environments">
               <Grid container spacing={2}>
@@ -1245,11 +1509,16 @@ export const TemplateRunContent = ({
   controlContextApi,
 }: IdpDataProps & { controlContextApi: ControlContextApi }) => {
   const { templateId } = useParams();
+  const [searchParams] = useSearchParams();
   const classes = useStyles();
   const t = templates.find(x => x.id === templateId);
   const [step, setStep] = useState<'input' | 'confirm' | 'result'>('input');
-  const [projectId, setProjectId] = useState('');
-  const [environmentId, setEnvironmentId] = useState('');
+  const [projectId, setProjectId] = useState(
+    () => searchParams.get('projectId') ?? '',
+  );
+  const [environmentId, setEnvironmentId] = useState(
+    () => searchParams.get('environmentId') ?? '',
+  );
   const [parameters, setParameters] = useState<Record<string, string>>({});
   const [preview, setPreview] = useState<IdpTemplatePlanPreview>();
   const [previewStatus, setPreviewStatus] = useState<
