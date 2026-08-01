@@ -166,6 +166,41 @@ describe('DatabaseRuntimeAuditStore', () => {
     await expect(store.getLatestPlan(projectRef)).resolves.toBeUndefined();
   });
 
+  it('rolls back a dry-run ActionRun when the paired OperationLog cannot append', async () => {
+    const store = new DatabaseRuntimeAuditStore(client);
+    await store.appendOperationLog(operationLog({ id: 'log-dry-run-atomic' }));
+
+    await expect(
+      store.appendActionRunWithOperationLog({
+        actionRun: actionRun({
+          id: 'dry-run-atomic',
+          actionRunRef: 'action-run:dry-run-atomic',
+          planRef: 'plan:plan-1',
+        }),
+        operationLog: operationLog({
+          id: 'log-dry-run-atomic',
+          operationLogRef: 'operation-log:dry-run-atomic',
+          eventType: 'dry-run.completed',
+          status: 'dry-run-succeeded',
+          actionRunRef: 'action-run:dry-run-atomic',
+        }),
+      }),
+    ).rejects.toBeInstanceOf(ConflictError);
+    await expect(store.getLatestActionRun(projectRef)).resolves.toBeUndefined();
+  });
+
+  it('finds an existing Plan by planRef without mutating it', async () => {
+    const store = new DatabaseRuntimeAuditStore(client);
+    const storedPlan = await store.appendPlan(
+      plan({ id: 'plan-by-ref', planRef: 'plan:by-ref' }),
+    );
+
+    await expect(store.getPlanByRef('plan:by-ref')).resolves.toEqual(
+      storedPlan,
+    );
+    await expect(store.getPlanByRef('plan:missing')).resolves.toBeUndefined();
+  });
+
   it('rejects createdAt values that are not ISO 8601 instants', async () => {
     const store = new DatabaseRuntimeAuditStore(client);
 

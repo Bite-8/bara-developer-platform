@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 import {
   ActionRunSummary,
+  CreateDryRunActionRunResponse,
   CreateTemplatePlanPreviewResponse,
   DesiredStateContract,
   OperationLogRecord,
@@ -36,6 +37,13 @@ export interface RuntimeAuditStore {
     operationLog: OperationLogRecord;
   }): Promise<CreateTemplatePlanPreviewResponse>;
   appendActionRun(record: ActionRunSummary): Promise<ActionRunSummary>;
+  appendActionRunWithOperationLog(records: {
+    actionRun: ActionRunSummary;
+    operationLog: OperationLogRecord;
+  }): Promise<
+    Pick<CreateDryRunActionRunResponse, 'actionRun' | 'operationLog'>
+  >;
+  getPlanByRef(planRef: string): Promise<PlanSummary | undefined>;
   getLatestPlan(projectRef: string): Promise<PlanSummary | undefined>;
   getLatestActionRun(projectRef: string): Promise<ActionRunSummary | undefined>;
   getDesiredStateContract(): DesiredStateContract;
@@ -173,6 +181,33 @@ export class InMemoryRuntimeAuditStore implements RuntimeAuditStore {
     return cloneRecord(storedRecord);
   }
 
+  async appendActionRunWithOperationLog(records: {
+    actionRun: ActionRunSummary;
+    operationLog: OperationLogRecord;
+  }): Promise<
+    Pick<CreateDryRunActionRunResponse, 'actionRun' | 'operationLog'>
+  > {
+    const actionRun = withNormalizedCreatedAt(cloneRecord(records.actionRun));
+    const operationLog = withNormalizedCreatedAt(
+      cloneRecord(records.operationLog),
+    );
+    this.assertUniqueId('ActionRun', actionRun.id, this.actionRuns);
+    this.assertUniqueId('OperationLog', operationLog.id, this.operationLogs);
+    this.actionRuns.push(actionRun);
+    this.operationLogs.push(operationLog);
+
+    return {
+      actionRun: cloneRecord(actionRun),
+      operationLog: cloneRecord(operationLog),
+    };
+  }
+
+  async getPlanByRef(planRef: string): Promise<PlanSummary | undefined> {
+    const plan = this.plans.find(candidate => candidate.planRef === planRef);
+
+    return plan ? cloneRecord(plan) : undefined;
+  }
+
   async getLatestPlan(projectRef: string): Promise<PlanSummary | undefined> {
     const latestPlan = this.plans
       .filter(plan => plan.targetEntityRef === projectRef)
@@ -308,6 +343,47 @@ export class DatabaseRuntimeAuditStore implements RuntimeAuditStore {
     }
 
     return cloneRecord(normalized);
+  }
+
+  async appendActionRunWithOperationLog(records: {
+    actionRun: ActionRunSummary;
+    operationLog: OperationLogRecord;
+  }): Promise<
+    Pick<CreateDryRunActionRunResponse, 'actionRun' | 'operationLog'>
+  > {
+    const actionRun = withNormalizedCreatedAt(records.actionRun);
+    const operationLog = withNormalizedCreatedAt(records.operationLog);
+
+    try {
+      await this.client.transaction(async trx => {
+        await this.insertActionRun(trx, actionRun);
+        await this.insertOperationLog(trx, operationLog);
+      });
+    } catch (error) {
+      if (isDatabaseConflictError(error)) {
+        throw new ConflictError(
+          `ActionRun '${actionRun.id}' could not be stored because one of its append-only dry-run records already exists.`,
+        );
+      }
+
+      throw error;
+    }
+
+    return {
+      actionRun: cloneRecord(actionRun),
+      operationLog: cloneRecord(operationLog),
+    };
+  }
+
+  async getPlanByRef(planRef: string): Promise<PlanSummary | undefined> {
+    const row = await this.client(planTable)
+      .select('payload')
+      .where({ plan_ref: planRef })
+      .orderBy('created_at', 'desc')
+      .orderBy('id', 'desc')
+      .first();
+
+    return row ? parsePayload<PlanSummary>(row.payload) : undefined;
   }
 
   async getLatestPlan(projectRef: string): Promise<PlanSummary | undefined> {

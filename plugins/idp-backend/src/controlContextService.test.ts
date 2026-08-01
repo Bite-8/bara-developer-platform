@@ -259,6 +259,153 @@ describe('ControlContextService', () => {
     expect(context.latestActionRun).toBeUndefined();
   });
 
+  it('records a side-effect-free dry-run ActionRun for an existing Plan and returns it from Project control context', async () => {
+    const catalog = createCatalog();
+    const runtimeStore = new InMemoryRuntimeAuditStore();
+    const service = new ControlContextService(catalog as any, runtimeStore);
+    const preview = await service.createTemplatePlanPreview({
+      credentials,
+      request: {
+        projectRef: 'system:default/payments',
+        environmentRef: 'resource:default/payments-dev',
+        templateRef: 'template:default/node-service',
+        parameters: { serviceName: 'checkout-api' },
+        idempotencyKey: 'preview-dry-run-checkout-api',
+      },
+    });
+
+    const dryRun = await service.createDryRunActionRun({
+      credentials,
+      request: {
+        projectRef: 'system:default/payments',
+        planRef: preview.plan.planRef,
+        idempotencyKey: 'dry-run-checkout-api',
+      },
+    });
+
+    expect(dryRun).toMatchObject({
+      actionRun: {
+        kind: 'ActionRun',
+        actionRunRef: 'action-run:dry-run-dry-run-checkout-api',
+        planRef: preview.plan.planRef,
+        mode: 'dry-run',
+        eventType: 'dry-run.completed',
+        status: 'dry-run-succeeded',
+        actor: { type: 'user', entityRef: 'user:default/guest' },
+        targetEntityRef: 'system:default/payments',
+        resultSummary: expect.stringContaining(
+          'no Scaffolder task, Git PR, or external execution was started',
+        ),
+      },
+      operationLog: {
+        kind: 'OperationLog',
+        eventType: 'dry-run.completed',
+        status: 'dry-run-succeeded',
+        projectRef: 'system:default/payments',
+        planRef: preview.plan.planRef,
+        actionRunRef: 'action-run:dry-run-dry-run-checkout-api',
+        message: expect.stringContaining('no Scaffolder task'),
+      },
+      sideEffectBoundary: {
+        scaffolderTaskStarted: false,
+        gitPullRequestCreated: false,
+        externalExecutionStarted: false,
+        message: expect.stringContaining('external execution was started'),
+      },
+    });
+    expect(dryRun.actionRun).not.toHaveProperty('externalExecutionRef');
+
+    const context = await service.getProjectControlContext({
+      projectRef: 'system:default/payments',
+      credentials,
+    });
+    expect(context.latestPlan).toEqual(preview.plan);
+    expect(context.latestActionRun).toEqual(dryRun.actionRun);
+    expect(context.recentOperationLogs).toEqual([
+      dryRun.operationLog,
+      preview.operationLog,
+    ]);
+  });
+
+  it('rejects dry-run ActionRun creation for missing, mismatched, or denied Plans without appending a run', async () => {
+    const runtimeStore = new InMemoryRuntimeAuditStore();
+    const service = new ControlContextService(
+      createCatalog() as any,
+      runtimeStore,
+    );
+
+    await expect(
+      service.createDryRunActionRun({
+        credentials,
+        request: {
+          projectRef: 'system:default/payments',
+          planRef: 'plan:missing',
+          idempotencyKey: 'dry-run-missing-plan',
+        },
+      }),
+    ).rejects.toThrow(/No Plan runtime audit record/);
+
+    await runtimeStore.appendPlan({
+      id: 'plan-mismatch',
+      kind: 'Plan',
+      planRef: 'plan:mismatch',
+      actor: { type: 'user', entityRef: 'user:default/guest' },
+      targetEntityRef: 'system:default/other-project',
+      eventType: 'plan.created',
+      createdAt: '2026-08-01T00:00:00.000Z',
+      status: 'planned',
+      expectedChangeSummary: 'Different project',
+      requiredApproval: 'none',
+    });
+    await expect(
+      service.createDryRunActionRun({
+        credentials,
+        request: {
+          projectRef: 'system:default/payments',
+          planRef: 'plan:mismatch',
+          idempotencyKey: 'dry-run-mismatch',
+        },
+      }),
+    ).rejects.toThrow(/belongs to 'system:default\/other-project'/);
+
+    await runtimeStore.appendPlan({
+      id: 'plan-denied',
+      kind: 'Plan',
+      planRef: 'plan:denied',
+      actor: { type: 'user', entityRef: 'user:default/guest' },
+      targetEntityRef: 'system:default/payments',
+      eventType: 'plan.created',
+      createdAt: '2026-08-01T00:01:00.000Z',
+      status: 'denied',
+      expectedChangeSummary: 'Denied project',
+      requiredApproval: 'manual',
+      policyDecision: {
+        result: 'deny',
+        reasons: ['Catalog ownership is missing'],
+      },
+    });
+    await expect(
+      service.createDryRunActionRun({
+        credentials,
+        request: {
+          projectRef: 'system:default/payments',
+          planRef: 'plan:denied',
+          idempotencyKey: 'dry-run-denied',
+        },
+      }),
+    ).rejects.toThrow(/is denied/);
+
+    await expect(
+      runtimeStore.getLatestActionRun('system:default/payments'),
+    ).resolves.toBeUndefined();
+    await expect(
+      runtimeStore.listOperationLogs({
+        projectRef: 'system:default/payments',
+        limit: 20,
+      }),
+    ).resolves.toEqual([]);
+  });
+
   it('stores service credentials as the audit actor when a service creates a Plan preview', async () => {
     const service = new ControlContextService(
       createCatalog() as any,

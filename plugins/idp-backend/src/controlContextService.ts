@@ -4,15 +4,23 @@ import {
   RELATION_PART_OF,
   stringifyEntityRef,
 } from '@backstage/catalog-model';
-import { AuthenticationError, NotFoundError } from '@backstage/errors';
+import {
+  AuthenticationError,
+  InputError,
+  NotFoundError,
+} from '@backstage/errors';
 import { CatalogService } from '@backstage/plugin-catalog-node';
 import { BackstageCredentials } from '@backstage/backend-plugin-api';
 
 import {
+  ActionRunSummary,
   AllowedActionSummary,
   ActorRef,
+  CreateDryRunActionRunRequest,
+  CreateDryRunActionRunResponse,
   CreateTemplatePlanPreviewRequest,
   CreateTemplatePlanPreviewResponse,
+  OperationLogRecord,
   PlanSummary,
   PolicyDecision,
   ProjectControlContext,
@@ -324,6 +332,106 @@ export class ControlContextService {
       plan,
       operationLog,
     });
+  }
+
+  async createDryRunActionRun(options: {
+    request: CreateDryRunActionRunRequest;
+    credentials: BackstageCredentials;
+  }): Promise<CreateDryRunActionRunResponse> {
+    const project = await this.catalog.getEntityByRef(
+      options.request.projectRef,
+      {
+        credentials: options.credentials,
+      },
+    );
+
+    if (!project) {
+      throw new NotFoundError(
+        `No project catalog entity found for ref '${options.request.projectRef}'`,
+      );
+    }
+
+    const projectRef = stringifyEntityRef(project);
+    const plan = await this.runtimeStore.getPlanByRef(options.request.planRef);
+    if (!plan) {
+      throw new NotFoundError(
+        `No Plan runtime audit record found for ref '${options.request.planRef}'`,
+      );
+    }
+
+    if (plan.targetEntityRef !== projectRef) {
+      throw new InputError(
+        `Plan '${options.request.planRef}' belongs to '${plan.targetEntityRef}', not '${projectRef}'.`,
+      );
+    }
+
+    if (plan.status === 'denied' || plan.policyDecision?.result === 'deny') {
+      throw new InputError(
+        `Plan '${options.request.planRef}' is denied and cannot be dry-run recorded.`,
+      );
+    }
+
+    const actor = auditActorForCredentials(options.credentials);
+    const now = new Date().toISOString();
+    const idPart = stableIdPart(options.request.idempotencyKey);
+    const actionRunRef = `action-run:dry-run-${idPart}`;
+    const resultSummary =
+      'Record-only dry-run completed; no Scaffolder task, Git PR, or external execution was started.';
+    const actionRun: ActionRunSummary = {
+      id: `dry-run-${idPart}`,
+      kind: 'ActionRun',
+      actionRunRef,
+      planRef: plan.planRef,
+      actor,
+      targetEntityRef: projectRef,
+      eventType: 'dry-run.completed',
+      createdAt: now,
+      status: 'dry-run-succeeded',
+      mode: 'dry-run',
+      resultSummary,
+      riskSummary: plan.riskSummary,
+      policyDecision: {
+        result:
+          plan.policyDecision?.result === 'needs-approval'
+            ? 'needs-approval'
+            : 'allow',
+        reasons: [
+          'This is a side-effect-free dry-run audit record only.',
+          'No Scaffolder task, Git PR, external execution, or approval enforcement is started.',
+        ],
+        requiredApprovalRefs: plan.policyDecision?.requiredApprovalRefs,
+      },
+    };
+    const operationLog: OperationLogRecord = {
+      id: `log-dry-run-${idPart}`,
+      kind: 'OperationLog',
+      operationLogRef: `operation-log:dry-run-${idPart}`,
+      actor,
+      targetEntityRef: projectRef,
+      eventType: 'dry-run.completed',
+      createdAt: now,
+      status: actionRun.status,
+      projectRef,
+      planRef: plan.planRef,
+      actionRunRef,
+      message: resultSummary,
+      riskSummary: plan.riskSummary,
+      policyDecision: actionRun.policyDecision,
+    };
+    const stored = await this.runtimeStore.appendActionRunWithOperationLog({
+      actionRun,
+      operationLog,
+    });
+
+    return {
+      ...stored,
+      sideEffectBoundary: {
+        scaffolderTaskStarted: false,
+        gitPullRequestCreated: false,
+        externalExecutionStarted: false,
+        message: resultSummary,
+      },
+    };
   }
 
   private allowedActionsForProject(project: Entity): AllowedActionSummary {
