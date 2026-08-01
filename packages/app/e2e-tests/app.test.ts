@@ -85,7 +85,9 @@ test('IDP Project detail should show recommended action before backend control c
 
   await page.locator('#template-parameter-serviceName').fill('examples-api');
   await page.getByRole('button', { name: 'Create plan preview' }).click();
-  await expect(page.getByText('Expected change')).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Expected change' }),
+  ).toBeVisible();
   await expect(page.getByText('Policy:', { exact: false })).toBeVisible();
   await expect(page.getByText('Risk:', { exact: false })).toBeVisible();
 });
