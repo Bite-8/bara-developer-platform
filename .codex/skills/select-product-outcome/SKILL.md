@@ -1,11 +1,13 @@
 ---
 name: select-product-outcome
-description: Select, issue, and record evidence-backed delivery, discovery, or maintenance outcomes for an IDP development cycle. Use after opportunity discovery, whether selection is done by the main agent or a delegated agent.
+description: Internal run-idp-development-cycle step. Select and issue the evidence-backed delivery, discovery, or maintenance outcome after read-only opportunity discovery.
 ---
 
 # 今回の運営サイクルの成果群を選定する
 
-`$discover-idp-opportunities` の候補と既存 backlog を、実装者が PR として配達でき、独立 reviewer が観測できる成果群へ変換する。候補を比較し、今回の運営サイクルに含める delivery / discovery / maintenance の対象をゼロ件、1 件、または複数件選ぶ。運営サイクルを単一機能や単一 Issue に固定しない。
+`$discover-idp-opportunities` の read-only 候補と既存 backlog を、実装者が PR として配達でき、独立 reviewer が観測できる成果へ変換する。この skill だけが候補の GitHub Issue を作成・更新する。
+
+この skill は `$run-idp-development-cycle` から明示的に呼ばれる内部手順である。ユーザーの一般的な「開発して」依頼から単独で暗黙起動しない。既定では対象を 1 delivery unit に限定する。0 件は有効な結果とし、複数件は run skill の複数化条件を全て満たす場合だけ選ぶ。
 
 ## 根拠を集める
 
@@ -13,8 +15,8 @@ description: Select, issue, and record evidence-backed delivery, discovery, or m
 
 - Project goal と `AGENTS.md`
 - `docs/product/`、`docs/architecture/`、ADR、`docs/reviews/`
-- 現在の実装、Git 履歴、未解決事項、最近の `docs/ai/output/` 成果物
-- 最新の機会探索レポート、backlog、実装・品質・製品レビューの証跡、既存 Pull Request
+- 現在の実装、Git 履歴、未解決事項、open Issue / Pull Request
+- 最新の機会探索レポート、backlog、GitHub 上の実装・品質・製品レビュー evidence
 - 必要なら実際に動かした製品の観測
 
 事実、推論、未確認事項を分ける。証跡が不足していても停止せず、判断を変え得る不確実性だけを記録する。
@@ -45,9 +47,9 @@ IDP 利用者の UX と観測可能な利用者価値を、運用負荷の削減
 
 価値は見込めるが重要な不確実性が残る候補は discovery Issue にする。調査すべき問い、集める証跡、調査後に下す判断を明記する。確認できた既存 label のみを使い、label を推測して作らない。
 
-## 決定記録を作る
+## 決定を GitHub Issue に記録する
 
-メイン agent が実行した場合は `docs/ai/output/cycle/`、custom agent に委譲した場合は `docs/ai/output/<agent-name>/` に、次の内容を含む完成版 Markdown として保存する。
+選定した成果は GitHub Issue の body または comment に次の内容で記録する。対象 PR に選定記録を追加 commit しない。repo に保存するのは ADR など長寿命の製品判断が必要な場合だけに限る。
 
 ```markdown
 # 今回の運営サイクルの成果群の決定
@@ -77,7 +79,7 @@ IDP 利用者の UX と観測可能な利用者価値を、運用負荷の削減
 
 <今回含めない範囲、軽減策、利用者価値を確認する証跡>
 
-## GitHub Issue と配達単位
+## GitHub Issue と delivery unit
 
 - Issue:
 - 種別: delivery / discovery / maintenance

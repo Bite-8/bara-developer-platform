@@ -2,3 +2,5 @@ interface:
   display_name: 'レビュー済み PR を merge'
   short_description: '同一 head のレビューと CI を確認して merge する'
   default_prompt: 'Use $merge-reviewed-pr to verify and merge this independently reviewed Bara Developer Platform Pull Request.'
+policy:
+  allow_implicit_invocation: false

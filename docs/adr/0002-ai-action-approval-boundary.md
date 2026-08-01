@@ -1,7 +1,8 @@
 # ADR 0002: AI action approval boundary
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-06-17
+- Accepted: 2026-08-01
 
 ## 背景
 
@@ -31,7 +32,7 @@ AI action は段階別の approval boundary を持つ。
 - AI が plan を提示する価値を保ちながら、実行権限を段階的に制御できる。
 - Git review、Scaffolder task、Backstage permission と整合しやすい。
 - 本番・高重要度環境に対して、人間が理解可能な承認と audit trail を残せる。
-- 将来の IDP backend plugin に、Intent / Plan / Approval / ActionRun / OperationLog の責務を与えやすい。
+- IDP backend plugin に、Intent / Plan / Approval / ActionRun / OperationLog の責務を与えやすい。
 
 ### 悪い影響 / trade-off
 
