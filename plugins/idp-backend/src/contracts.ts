@@ -68,6 +68,19 @@ export type PlanSummary = RuntimeRecordBase & {
   requiredApproval: 'none' | 'owner' | 'environment-owner' | 'manual';
 };
 
+export type CreateTemplatePlanPreviewRequest = {
+  projectRef: string;
+  environmentRef?: string;
+  templateRef: string;
+  parameters: Record<string, unknown>;
+  idempotencyKey: string;
+};
+
+export type CreateTemplatePlanPreviewResponse = {
+  plan: PlanSummary;
+  operationLog: OperationLogRecord;
+};
+
 export type ActionRunSummary = RuntimeRecordBase & {
   kind: 'ActionRun';
   actionRunRef: string;

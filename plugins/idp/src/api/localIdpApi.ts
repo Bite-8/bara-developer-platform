@@ -5,7 +5,11 @@ import {
   projects as seedProjects,
   templates as seedTemplates,
 } from '../data/mockData';
-import { IdpOperationLog, IdpTemplateExecution } from '../types';
+import {
+  IdpOperationLog,
+  IdpTemplateExecution,
+  IdpTemplatePlanPreview,
+} from '../types';
 import { IdpApi, TemplateExecutionInput } from './idpApi';
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
@@ -102,6 +106,12 @@ class LocalIdpApi implements IdpApi {
       createdAt: now,
     });
     return clone(execution);
+  }
+
+  async createTemplatePlanPreview(): Promise<IdpTemplatePlanPreview> {
+    throw new Error(
+      'Template Plan preview must be created by the backend IDP plugin.',
+    );
   }
 
   async getProjectControlContext(projectRef: string) {

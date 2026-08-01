@@ -1,8 +1,8 @@
 import { renderInTestApp } from '@backstage/test-utils';
-import { act, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { Route, Routes } from 'react-router-dom';
 
-import { ProjectDetailContent } from './IdpPages';
+import { ProjectDetailContent, TemplateRunContent } from './IdpPages';
 import {
   IdpEnvironment,
   IdpOperationLog,
@@ -94,9 +94,16 @@ const controlContext = (
     },
   ],
   latestPlan: {
+    id: 'examples-latest',
+    kind: 'Plan',
     planRef: 'plan:examples-latest',
+    actor: { entityRef: 'user:default/guest', type: 'user' },
+    targetEntityRef: 'system:default/examples',
+    eventType: 'plan.created',
+    createdAt: '2026-07-31T00:01:00Z',
     status: 'planned',
     expectedChangeSummary: 'Create a reviewable plan preview',
+    requiredApproval: 'none',
   },
   latestActionRun: {
     actionRunRef: 'action-run:examples-dry-run',
@@ -119,6 +126,7 @@ const renderProjectDetail = async ({
 } = {}) => {
   const controlContextApi = {
     getProjectControlContext: jest.fn().mockReturnValue(contextPromise),
+    createTemplatePlanPreview: jest.fn(),
   };
 
   await renderInTestApp(
@@ -240,5 +248,128 @@ describe('ProjectDetailContent', () => {
         'Production or critical execution requires explicit human approval.',
       ),
     ).toBeTruthy();
+  });
+});
+
+describe('TemplateRunContent', () => {
+  it('creates and displays a side-effect-free Plan preview instead of executing a template', async () => {
+    const preview = {
+      plan: {
+        id: 'preview-node',
+        kind: 'Plan' as const,
+        planRef: 'plan:preview-node',
+        actor: { entityRef: 'user:default/guest', type: 'user' as const },
+        targetEntityRef: 'system:default/examples',
+        eventType: 'plan.created' as const,
+        createdAt: '2026-08-01T00:00:00.000Z',
+        status: 'needs-approval' as const,
+        expectedChangeSummary:
+          'Preview node-api for examples in examples-dev; no Scaffolder task, Git PR, AI generation, or execution is started.',
+        requiredApproval: 'environment-owner' as const,
+        policyDecision: {
+          result: 'needs-approval' as const,
+          reasons: [
+            'Production-like or critical environment targets require explicit human approval before side effects.',
+          ],
+          requiredApprovalRefs: ['group:default/guests'],
+        },
+        riskSummary: {
+          level: 'medium' as const,
+          summary: 'Production-like target requires approval before execution.',
+          factors: ['production-like-environment', 'side-effect-free-preview'],
+        },
+      },
+      operationLog: {
+        id: 'log-preview-node',
+        operationLogRef: 'operation-log:preview-node',
+        actor: { entityRef: 'user:default/guest', type: 'user' as const },
+        targetEntityRef: 'system:default/examples',
+        eventType: 'plan.created' as const,
+        createdAt: '2026-08-01T00:00:00.000Z',
+        status: 'needs-approval' as const,
+        message: 'Plan preview needs-approval.',
+      },
+    };
+    const controlContextApi = {
+      getProjectControlContext: jest.fn(),
+      createTemplatePlanPreview: jest.fn().mockResolvedValue(preview),
+    };
+
+    const rendered = await renderInTestApp(
+      <Routes>
+        <Route
+          path="/idp/templates/:templateId/run"
+          element={
+            <TemplateRunContent
+              projects={[project]}
+              environments={[environment]}
+              templates={[
+                {
+                  ...template,
+                  scaffolderTemplateRef: 'template:default/node-api',
+                  parameters: [
+                    {
+                      name: 'serviceName',
+                      label: 'Service name',
+                      type: 'string',
+                      required: true,
+                    },
+                  ],
+                },
+              ]}
+              operationLogs={[] as IdpOperationLog[]}
+              executions={[] as IdpTemplateExecution[]}
+              refresh={jest.fn()}
+              controlContextApi={controlContextApi}
+            />
+          }
+        />
+      </Routes>,
+      { routeEntries: ['/idp/templates/node-api/run'] },
+    );
+
+    const selectInputs = rendered.container.querySelectorAll(
+      'input.MuiSelect-nativeInput',
+    );
+    fireEvent.change(selectInputs[0], {
+      target: { value: 'examples' },
+    });
+    fireEvent.change(selectInputs[1], {
+      target: { value: 'examples-dev' },
+    });
+    const textInputs =
+      rendered.container.querySelectorAll('input[type="text"]');
+    fireEvent.change(textInputs[0], {
+      target: { value: 'checkout-api' },
+    });
+    fireEvent.click(screen.getByText('Create plan preview'));
+
+    await waitFor(() => {
+      expect(controlContextApi.createTemplatePlanPreview).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectRef: 'system:default/examples',
+          environmentRef: 'resource:default/examples-dev',
+          templateRef: 'template:default/node-api',
+          parameters: { serviceName: 'checkout-api' },
+        }),
+      );
+    });
+    expect(
+      controlContextApi.createTemplatePlanPreview,
+    ).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        actor: expect.anything(),
+      }),
+    );
+    expect(screen.getByText('Expected change')).toBeTruthy();
+    expect(screen.getByText(preview.plan.expectedChangeSummary)).toBeTruthy();
+    expect(screen.getByText('Audit actor: user:default/guest')).toBeTruthy();
+    expect(screen.getByText('Policy: needs-approval')).toBeTruthy();
+    expect(
+      screen.getByText('Required approval: environment-owner'),
+    ).toBeTruthy();
+    expect(screen.getByText('Risk: medium')).toBeTruthy();
+    expect(screen.getByText('production-like-environment')).toBeTruthy();
+    expect(screen.queryByText('Create TemplateExecution')).toBeNull();
   });
 });

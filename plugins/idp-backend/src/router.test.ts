@@ -28,6 +28,7 @@ describe('createRouter', () => {
           notes: [],
         },
       }),
+      createTemplatePlanPreview: jest.fn(),
     };
     const router = await createRouter({
       httpAuth: mockServices.httpAuth(),
@@ -49,5 +50,124 @@ describe('createRouter', () => {
         }),
       }),
     });
+  });
+
+  it('creates a template Plan preview through a validated write path', async () => {
+    const preview = {
+      plan: {
+        id: 'preview-node-dev',
+        kind: 'Plan',
+        planRef: 'plan:preview-node-dev',
+        actor: { type: 'user', entityRef: 'user:default/guest' },
+        targetEntityRef: 'system:default/examples',
+        eventType: 'plan.created',
+        createdAt: '2026-08-01T00:00:00.000Z',
+        status: 'planned',
+        expectedChangeSummary:
+          'Preview node-service without starting execution.',
+        requiredApproval: 'none',
+        policyDecision: {
+          result: 'allow',
+          reasons: ['Plan preview has no side effects.'],
+        },
+        riskSummary: {
+          level: 'low',
+          summary: 'Plan preview only.',
+          factors: ['side-effect-free-preview'],
+        },
+      },
+      operationLog: {
+        id: 'log-preview-node-dev',
+        kind: 'OperationLog',
+        operationLogRef: 'operation-log:preview-node-dev',
+        actor: { type: 'user', entityRef: 'user:default/guest' },
+        targetEntityRef: 'system:default/examples',
+        eventType: 'plan.created',
+        createdAt: '2026-08-01T00:00:00.000Z',
+        status: 'planned',
+        projectRef: 'system:default/examples',
+        environmentRef: 'resource:default/examples-dev',
+        templateRef: 'template:default/node-service',
+        planRef: 'plan:preview-node-dev',
+        message: 'Plan preview planned for template:default/node-service.',
+      },
+    };
+    const controlContext = {
+      getProjectControlContext: jest.fn(),
+      createTemplatePlanPreview: jest.fn().mockResolvedValue(preview),
+    };
+    const router = await createRouter({
+      httpAuth: mockServices.httpAuth(),
+      controlContext: controlContext as any,
+    });
+    const app = express().use(router);
+
+    const body = {
+      projectRef: 'system:default/examples',
+      environmentRef: 'resource:default/examples-dev',
+      templateRef: 'template:default/node-service',
+      parameters: { serviceName: 'checkout-api' },
+      idempotencyKey: 'preview-node-dev',
+    };
+    const response = await request(app)
+      .post('/plans/template-preview')
+      .send(body);
+
+    expect(response.status).toBe(201);
+    expect(response.body).toEqual(preview);
+    expect(controlContext.createTemplatePlanPreview).toHaveBeenCalledWith({
+      request: body,
+      credentials: expect.objectContaining({
+        principal: expect.objectContaining({
+          userEntityRef: mockCredentials.user().principal.userEntityRef,
+        }),
+      }),
+    });
+  });
+
+  it('rejects invalid template Plan preview requests', async () => {
+    const controlContext = {
+      getProjectControlContext: jest.fn(),
+      createTemplatePlanPreview: jest.fn(),
+    };
+    const router = await createRouter({
+      httpAuth: mockServices.httpAuth(),
+      controlContext: controlContext as any,
+    });
+    const app = express().use(router);
+
+    const response = await request(app).post('/plans/template-preview').send({
+      projectRef: 'system:default/examples',
+      templateRef: 'template:default/node-service',
+      idempotencyKey: 'short',
+    });
+
+    expect(response.status).toBeGreaterThanOrEqual(400);
+    expect(controlContext.createTemplatePlanPreview).not.toHaveBeenCalled();
+  });
+
+  it('rejects request-body actor spoofing attempts before audit storage', async () => {
+    const controlContext = {
+      getProjectControlContext: jest.fn(),
+      createTemplatePlanPreview: jest.fn(),
+    };
+    const router = await createRouter({
+      httpAuth: mockServices.httpAuth(),
+      controlContext: controlContext as any,
+    });
+    const app = express().use(router);
+
+    const response = await request(app)
+      .post('/plans/template-preview')
+      .send({
+        projectRef: 'system:default/examples',
+        templateRef: 'template:default/node-service',
+        parameters: { serviceName: 'checkout-api' },
+        actor: { type: 'user', entityRef: 'user:default/admin' },
+        idempotencyKey: 'preview-spoof-attempt',
+      });
+
+    expect(response.status).toBeGreaterThanOrEqual(400);
+    expect(controlContext.createTemplatePlanPreview).not.toHaveBeenCalled();
   });
 });

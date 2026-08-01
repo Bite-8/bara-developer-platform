@@ -183,6 +183,187 @@ describe('ControlContextService', () => {
     );
   });
 
+  it('creates a side-effect-free template Plan preview and returns it from Project control context', async () => {
+    const catalog = createCatalog();
+    const runtimeStore = new InMemoryRuntimeAuditStore();
+    const service = new ControlContextService(catalog as any, runtimeStore);
+
+    const preview = await service.createTemplatePlanPreview({
+      credentials,
+      request: {
+        projectRef: 'system:default/payments',
+        environmentRef: 'resource:default/payments-dev',
+        templateRef: 'template:default/node-service',
+        parameters: { serviceName: 'checkout-api' },
+        idempotencyKey: 'preview-checkout-api',
+      },
+    });
+
+    expect(preview.plan).toMatchObject({
+      kind: 'Plan',
+      planRef: 'plan:preview-checkout-api',
+      actor: { type: 'user', entityRef: 'user:default/guest' },
+      targetEntityRef: 'system:default/payments',
+      status: 'planned',
+      expectedChangeSummary: expect.stringContaining(
+        'no Scaffolder task, Git PR, AI generation, or execution is started',
+      ),
+      requiredApproval: 'none',
+      policyDecision: {
+        result: 'allow',
+        reasons: expect.arrayContaining([
+          expect.stringContaining('Plan preview has no side effects'),
+        ]),
+      },
+      riskSummary: {
+        level: 'low',
+        summary: expect.stringContaining('without side effects'),
+        factors: expect.arrayContaining(['side-effect-free-preview']),
+      },
+    });
+    expect(preview.operationLog).toMatchObject({
+      kind: 'OperationLog',
+      eventType: 'plan.created',
+      projectRef: 'system:default/payments',
+      environmentRef: 'resource:default/payments-dev',
+      templateRef: 'template:default/node-service',
+      planRef: preview.plan.planRef,
+      actor: { type: 'user', entityRef: 'user:default/guest' },
+    });
+
+    const context = await service.getProjectControlContext({
+      projectRef: 'system:default/payments',
+      credentials,
+    });
+    expect(context.latestPlan).toEqual(preview.plan);
+    expect(context.recentOperationLogs).toEqual([preview.operationLog]);
+    expect(context.latestActionRun).toBeUndefined();
+  });
+
+  it('stores service credentials as the audit actor when a service creates a Plan preview', async () => {
+    const service = new ControlContextService(
+      createCatalog() as any,
+      new InMemoryRuntimeAuditStore(),
+    );
+
+    const preview = await service.createTemplatePlanPreview({
+      credentials: mockCredentials.service('plugin:idp-automation'),
+      request: {
+        projectRef: 'system:default/payments',
+        templateRef: 'template:default/node-service',
+        parameters: {},
+        idempotencyKey: 'preview-service-actor',
+      },
+    });
+
+    expect(preview.plan.actor).toEqual({
+      type: 'service',
+      entityRef: 'plugin:idp-automation',
+    });
+    expect(preview.operationLog.actor).toEqual({
+      type: 'service',
+      entityRef: 'plugin:idp-automation',
+    });
+  });
+
+  it('rejects Plan preview creation when credentials do not identify a user or service actor', async () => {
+    const service = new ControlContextService(
+      createCatalog() as any,
+      new InMemoryRuntimeAuditStore(),
+    );
+
+    await expect(
+      service.createTemplatePlanPreview({
+        credentials: mockCredentials.none(),
+        request: {
+          projectRef: 'system:default/payments',
+          templateRef: 'template:default/node-service',
+          parameters: {},
+          idempotencyKey: 'preview-no-actor',
+        },
+      }),
+    ).rejects.toThrow(/identity is required/);
+  });
+
+  it('marks production-like template Plan previews as needing approval', async () => {
+    const catalog = createCatalog();
+    const service = new ControlContextService(
+      catalog as any,
+      new InMemoryRuntimeAuditStore(),
+    );
+
+    const preview = await service.createTemplatePlanPreview({
+      credentials,
+      request: {
+        projectRef: 'system:default/payments',
+        environmentRef: 'resource:default/payments-prod',
+        templateRef: 'template:default/node-service',
+        parameters: {},
+        idempotencyKey: 'preview-prod-node',
+      },
+    });
+
+    expect(preview.plan).toMatchObject({
+      status: 'needs-approval',
+      requiredApproval: 'environment-owner',
+      policyDecision: {
+        result: 'needs-approval',
+        requiredApprovalRefs: ['group:default/platform'],
+        reasons: expect.arrayContaining([
+          expect.stringContaining('Production-like'),
+        ]),
+      },
+      riskSummary: {
+        level: 'medium',
+        factors: expect.arrayContaining(['production-like-environment']),
+      },
+    });
+  });
+
+  it('denies template Plan previews when target Project ownership is missing', async () => {
+    const ownerlessProject: Entity = {
+      ...projectEntity,
+      spec: {},
+      relations: projectEntity.relations?.filter(
+        relation => relation.type !== 'ownedBy',
+      ),
+    };
+    const catalog = {
+      ...createCatalog(),
+      getEntityByRef: jest.fn().mockResolvedValue(ownerlessProject),
+    };
+    const service = new ControlContextService(
+      catalog as any,
+      new InMemoryRuntimeAuditStore(),
+    );
+
+    const preview = await service.createTemplatePlanPreview({
+      credentials,
+      request: {
+        projectRef: 'system:default/payments',
+        environmentRef: 'resource:default/payments-dev',
+        templateRef: 'template:default/node-service',
+        parameters: {},
+        idempotencyKey: 'preview-ownerless-node',
+      },
+    });
+
+    expect(preview.plan).toMatchObject({
+      status: 'denied',
+      requiredApproval: 'manual',
+      policyDecision: {
+        result: 'deny',
+        reasons: expect.arrayContaining([
+          expect.stringContaining('Catalog ownership is missing'),
+        ]),
+      },
+      riskSummary: {
+        level: 'high',
+        factors: expect.arrayContaining(['ownerless-target']),
+      },
+    });
+  });
+
   it('treats OperationLog as append-only', async () => {
     const store = new InMemoryRuntimeAuditStore();
     const baseLog: OperationLogRecord = {

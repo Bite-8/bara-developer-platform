@@ -5,6 +5,8 @@ import {
   IdpProject,
   IdpTemplate,
   IdpTemplateExecution,
+  IdpTemplatePlanPreview,
+  IdpTemplatePlanPreviewInput,
 } from '../types';
 
 export type TemplateExecutionInput = {
@@ -34,6 +36,9 @@ export type IdpApi = {
     templateId?: string;
   }): Promise<IdpTemplateExecution[]>;
   executeTemplate(input: TemplateExecutionInput): Promise<IdpTemplateExecution>;
+  createTemplatePlanPreview(
+    input: IdpTemplatePlanPreviewInput,
+  ): Promise<IdpTemplatePlanPreview>;
   getProjectControlContext(
     projectRef: string,
   ): Promise<IdpProjectControlContext>;

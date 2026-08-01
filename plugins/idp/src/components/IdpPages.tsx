@@ -38,6 +38,7 @@ import {
   IdpProject,
   IdpTemplate,
   IdpTemplateExecution,
+  IdpTemplatePlanPreview,
 } from '../types';
 
 const useStyles = makeStyles(theme => ({
@@ -475,7 +476,10 @@ export const EmptyState = ({ title }: { title: string }) => (
   </IdpChrome>
 );
 
-type ControlContextApi = Pick<IdpApi, 'getProjectControlContext'>;
+type ControlContextApi = Pick<
+  IdpApi,
+  'getProjectControlContext' | 'createTemplatePlanPreview'
+>;
 
 const useBackendControlContextApi = (): ControlContextApi => {
   const discoveryApi = useApi(discoveryApiRef);
@@ -489,6 +493,13 @@ const useBackendControlContextApi = (): ControlContextApi => {
           baseUrl,
           fetchApi: fetchApi.fetch,
         }).getProjectControlContext(projectRef);
+      },
+      createTemplatePlanPreview: async input => {
+        const baseUrl = await discoveryApi.getBaseUrl('idp');
+        return new BackendIdpApi({
+          baseUrl,
+          fetchApi: fetchApi.fetch,
+        }).createTemplatePlanPreview(input);
       },
     }),
     [discoveryApi, fetchApi],
@@ -1227,22 +1238,24 @@ export const TemplateDetailPage = ({ templates }: IdpDataProps) => {
   );
 };
 
-export const TemplateRunPage = ({
+export const TemplateRunContent = ({
   projects,
   environments,
   templates,
-  refresh,
-}: IdpDataProps) => {
+  controlContextApi,
+}: IdpDataProps & { controlContextApi: ControlContextApi }) => {
   const { templateId } = useParams();
+  const classes = useStyles();
   const t = templates.find(x => x.id === templateId);
   const [step, setStep] = useState<'input' | 'confirm' | 'result'>('input');
   const [projectId, setProjectId] = useState('');
   const [environmentId, setEnvironmentId] = useState('');
-  const [requestedBy, setRequestedBy] = useState(
-    'user:default/local-developer',
-  );
   const [parameters, setParameters] = useState<Record<string, string>>({});
-  const [execution, setExecution] = useState<IdpTemplateExecution>();
+  const [preview, setPreview] = useState<IdpTemplatePlanPreview>();
+  const [previewStatus, setPreviewStatus] = useState<
+    'idle' | 'creating' | 'error'
+  >('idle');
+  const [previewError, setPreviewError] = useState('');
   const filteredEnvironments = useMemo(
     () =>
       projectId
@@ -1253,21 +1266,55 @@ export const TemplateRunPage = ({
     [environments, projectId],
   );
   if (!t) return <EmptyState title="Template not found" />;
-  const execute = async () => {
-    const nextExecution = await idpApi.executeTemplate({
-      templateId: t.id,
-      projectId: projectId || undefined,
-      environmentId: environmentId || undefined,
-      parameters,
-      requestedBy,
-    });
-    setExecution(nextExecution);
-    await refresh();
-    setStep('result');
+  const selectedProject = projects.find(project => project.id === projectId);
+  const selectedEnvironment = environments.find(
+    environment => environment.id === environmentId,
+  );
+  const selectedProjectRef = selectedProject
+    ? projectControlRef(selectedProject)
+    : '';
+  const selectedEnvironmentRef =
+    selectedEnvironment?.relatedCatalogEntityRefs[0] ??
+    (selectedEnvironment ? `resource:default/${selectedEnvironment.id}` : '');
+  const templateRef = t.scaffolderTemplateRef ?? `template:default/${t.id}`;
+
+  const createPreview = async () => {
+    if (!selectedProjectRef) {
+      return;
+    }
+
+    setPreviewStatus('creating');
+    setPreviewError('');
+    try {
+      const nextPreview = await controlContextApi.createTemplatePlanPreview({
+        projectRef: selectedProjectRef,
+        environmentRef: selectedEnvironmentRef || undefined,
+        templateRef,
+        parameters,
+        idempotencyKey: [
+          selectedProjectRef,
+          selectedEnvironmentRef || 'no-environment',
+          templateRef,
+          Date.now(),
+        ].join(':'),
+      });
+      setPreview(nextPreview);
+      setStep('confirm');
+    } catch (error) {
+      setPreviewStatus('error');
+      setPreviewError(
+        error instanceof Error ? error.message : 'Unknown IDP API error',
+      );
+      return;
+    }
+    setPreviewStatus('idle');
   };
   return (
     <IdpChrome>
-      <Header title={`Run ${t.name}`} subtitle="Mock template execution flow" />
+      <Header
+        title={`Plan ${t.name}`}
+        subtitle="Side-effect-free Template Plan preview"
+      />
       <Content>
         <Grid container spacing={3}>
           <Grid item xs={12} md={4}>
@@ -1312,13 +1359,12 @@ export const TemplateRunPage = ({
                     </TextField>
                   </Grid>
                   <Grid item xs={12} md={4}>
-                    <TextField
-                      fullWidth
-                      required
-                      label="Requested by"
-                      value={requestedBy}
-                      onChange={event => setRequestedBy(event.target.value)}
-                    />
+                    <Box className={classes.miniCard}>
+                      <Typography variant="subtitle2" className={classes.muted}>
+                        Audit actor
+                      </Typography>
+                      <Typography>Backstage session identity</Typography>
+                    </Box>
                   </Grid>
                   {t.parameters.map(parameter => (
                     <Grid item xs={12} md={6} key={parameter.name}>
@@ -1344,44 +1390,107 @@ export const TemplateRunPage = ({
                     <Button
                       variant="contained"
                       color="primary"
-                      disabled={!projectId || !requestedBy}
-                      onClick={() => setStep('confirm')}
+                      disabled={!projectId}
+                      onClick={createPreview}
                     >
-                      Confirm inputs
+                      {previewStatus === 'creating'
+                        ? 'Creating plan preview...'
+                        : 'Create plan preview'}
                     </Button>
+                    {previewStatus === 'error' && (
+                      <Box mt={2}>
+                        <StatusChip status="error" />
+                        <Typography className={classes.muted}>
+                          {previewError}
+                        </Typography>
+                      </Box>
+                    )}
                   </Grid>
                 </Grid>
               )}
-              {step === 'confirm' && (
+              {step === 'confirm' && preview && (
                 <Box>
                   <Typography>Template: {t.name}</Typography>
                   <Typography>
                     Project: {projectName(projects, projectId)}
                   </Typography>
+                  <Typography>Project ref: {selectedProjectRef}</Typography>
+                  <Typography>Template ref: {templateRef}</Typography>
                   <Typography>
-                    Environment: {environmentId || 'not selected'}
+                    Environment ref: {selectedEnvironmentRef || 'not selected'}
                   </Typography>
-                  <Typography>Requested by: {requestedBy}</Typography>
-                  <pre>{JSON.stringify(parameters, null, 2)}</pre>
+                  <Typography>
+                    Audit actor: {preview.plan.actor.entityRef}
+                  </Typography>
+                  <Box mt={2} className={classes.metaGrid}>
+                    <StatusChip status={preview.plan.status} />
+                    <Chip
+                      size="small"
+                      className={classes.chip}
+                      label={`Policy: ${
+                        preview.plan.policyDecision?.result ?? 'unknown'
+                      }`}
+                    />
+                    <Chip
+                      size="small"
+                      className={classes.chip}
+                      label={`Required approval: ${preview.plan.requiredApproval}`}
+                    />
+                    <Chip
+                      size="small"
+                      className={classes.chip}
+                      label={`Risk: ${
+                        preview.plan.riskSummary?.level ?? 'unknown'
+                      }`}
+                    />
+                  </Box>
+                  <Box mt={2}>
+                    <Typography variant="h6">Expected change</Typography>
+                    <Typography>
+                      {preview.plan.expectedChangeSummary}
+                    </Typography>
+                  </Box>
+                  <Box mt={2}>
+                    <Typography variant="h6">Risk summary</Typography>
+                    <Typography>
+                      {preview.plan.riskSummary?.summary ?? 'Not evaluated'}
+                    </Typography>
+                    {preview.plan.riskSummary?.factors.map(factor => (
+                      <Typography key={factor} className={classes.muted}>
+                        {factor}
+                      </Typography>
+                    ))}
+                  </Box>
+                  <Box mt={2}>
+                    <Typography variant="h6">Policy decision</Typography>
+                    {preview.plan.policyDecision?.reasons.map(reason => (
+                      <Typography key={reason} className={classes.muted}>
+                        {reason}
+                      </Typography>
+                    ))}
+                    <Typography className={classes.muted}>
+                      Plan ref {preview.plan.planRef} is recorded in backend
+                      runtime context with OperationLog{' '}
+                      {preview.operationLog.operationLogRef}.
+                    </Typography>
+                  </Box>
+                  <Box mt={2}>
+                    <Typography variant="h6">Input parameters</Typography>
+                    <pre>{JSON.stringify(parameters, null, 2)}</pre>
+                  </Box>
                   <Button onClick={() => setStep('input')}>Back</Button>
                   <Button
-                    variant="contained"
+                    component={Link}
+                    to={`/idp/projects/${projectId}`}
                     color="primary"
-                    startIcon={<CloudQueueIcon />}
-                    onClick={execute}
                   >
-                    Create TemplateExecution
+                    Open Project control context
                   </Button>
                 </Box>
               )}
-              {step === 'result' && execution && (
+              {step === 'result' && preview && (
                 <Box>
-                  <Typography>Execution ID: {execution.id}</Typography>
-                  <Typography>
-                    Status: <StatusChip status={execution.status} />
-                  </Typography>
-                  <Typography>Created: {execution.createdAt}</Typography>
-                  <pre>{JSON.stringify(execution.parameters, null, 2)}</pre>
+                  <Typography>Plan ref: {preview.plan.planRef}</Typography>
                   <Button component={Link} to="/idp/templates" color="primary">
                     Back to templates
                   </Button>
@@ -1392,6 +1501,14 @@ export const TemplateRunPage = ({
         </Grid>
       </Content>
     </IdpChrome>
+  );
+};
+
+export const TemplateRunPage = (props: IdpDataProps) => {
+  const controlContextApi = useBackendControlContextApi();
+
+  return (
+    <TemplateRunContent {...props} controlContextApi={controlContextApi} />
   );
 };
 
