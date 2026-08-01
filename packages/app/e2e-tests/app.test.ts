@@ -80,11 +80,10 @@ test('IDP Project detail should show recommended action before backend control c
     /\/idp\/templates\/node-api\/run\?projectId=examples&environmentId=examples-dev/,
   );
   await expect(page.getByText('Step: input')).toBeVisible();
-  const selectInputs = page.locator('input.MuiSelect-nativeInput');
-  await expect(selectInputs.nth(0)).toHaveValue('examples');
-  await expect(selectInputs.nth(1)).toHaveValue('examples-dev');
+  await expect(page.getByText('Examples', { exact: true })).toBeVisible();
+  await expect(page.getByText('examples-dev', { exact: true })).toBeVisible();
 
-  await page.getByLabel('Service name').fill('examples-api');
+  await page.getByRole('textbox').nth(2).fill('examples-api');
   await page.getByRole('button', { name: 'Create plan preview' }).click();
   await expect(page.getByText('Expected change')).toBeVisible();
   await expect(page.getByText('Policy:', { exact: false })).toBeVisible();

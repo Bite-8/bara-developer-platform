@@ -1666,10 +1666,14 @@ export const TemplateRunContent = ({
                   {t.parameters.map(parameter => (
                     <Grid item xs={12} md={6} key={parameter.name}>
                       <TextField
+                        id={`template-parameter-${parameter.name}`}
                         fullWidth
                         required={parameter.required}
                         label={parameter.label}
                         helperText={parameter.description}
+                        inputProps={{
+                          'aria-label': parameter.label,
+                        }}
                         value={
                           parameters[parameter.name] ??
                           String(parameter.defaultValue ?? '')
