@@ -19,7 +19,7 @@ AI は Backstage を置き換える実行主体ではありません。AI の提
 AI-native developer control plane の MVP を定義し、その最小の実装を進める段階です。現在は、以下の制御対象と境界を固めています。
 
 - Project / Environment / Template は Git YAML と Backstage Catalog を中心に、レビュー可能な desired state として扱う。
-- Intent / Plan / ActionRun / OperationLog は将来の IDP backend plugin が扱う runtime・監査 record とする。
+- `plugins/idp-backend` は Intent / Plan / ActionRun / OperationLog の最小 contract と Project control context read API を持つ。現在の runtime store は in-memory であり、durable な監査保存と write/approval flow は後続成果とする。
 - AI は evidence、expected change、risk、required approval を伴う plan を提示する。
 - 副作用のある変更は Scaffolder または Git PR を優先して実行し、結果を audit trail として残す。
 
@@ -38,8 +38,8 @@ AI-native developer control plane の MVP を定義し、その最小の実装�
 - [ADR 0001: IDP 管理モデルの source of truth](docs/adr/0001-idp-management-source-of-truth.md)
 - [ADR 0002: AI action approval boundary](docs/adr/0002-ai-action-approval-boundary.md)
 - [Backstage 拡張方針](docs/backstage-extension-policy.md)
-- [最新の製品レビュー](docs/reviews/2026-06-16-product-review-v2-ai-native-control-plane.md)
-- [Project-local agent の成果物](docs/ai/output/README.md)
+- [過去の製品レビュー](docs/reviews/2026-06-16-product-review-v2-ai-native-control-plane.md)
+- [Historical agent outputs の位置づけ](docs/ai/output/README.md)
 
 詳細な開発方法は [開発ガイド](docs/how-to-develop.md)、変更のレビューと動作確認は [レビュー・動作確認ガイド](docs/how-to-review-and-verify.md) を参照してください。
 

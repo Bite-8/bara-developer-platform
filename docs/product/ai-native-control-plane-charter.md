@@ -1,7 +1,8 @@
 # AI-native control plane charter
 
-- Status: Draft
+- Status: Accepted
 - Date: 2026-06-17
+- Last reviewed: 2026-08-01
 - Related review: `docs/reviews/2026-06-16-product-review-v2-ai-native-control-plane.md`
 - Related ADRs: `docs/adr/0001-idp-management-source-of-truth.md`, `docs/adr/0002-ai-action-approval-boundary.md`
 
@@ -24,12 +25,12 @@ AI は Backstage を置き換える実行主体ではなく、Catalog、Template
 | Project      | Git YAML / Backstage Catalog   | ownership、関連 resource、開発者が選ぶ作業 context      |
 | Environment  | Git YAML / Backstage Catalog   | criticality、runtime target、Project との関連           |
 | Template     | Git YAML / Scaffolder template | 承認済み作業の入口、parameter、governance metadata      |
-| Intent       | 将来の IDP backend plugin      | 人間または agent が表明した目的                         |
-| Plan         | 将来の IDP backend plugin      | 実行前の差分、risk、policy result、approval requirement |
-| ActionRun    | 将来の IDP backend plugin      | dry-run / execute の結果、external execution reference  |
-| OperationLog | 将来の IDP backend plugin      | append-only audit trail                                 |
+| Intent       | IDP backend plugin             | 人間または agent が表明した目的                         |
+| Plan         | IDP backend plugin             | 実行前の差分、risk、policy result、approval requirement |
+| ActionRun    | IDP backend plugin             | dry-run / execute の結果、external execution reference  |
+| OperationLog | IDP backend plugin             | append-only audit trail                                 |
 
-Project / Environment / Template の desired state は ADR 0001 に従って Git / Catalog に寄せる。Intent / Plan / ActionRun / OperationLog は runtime / audit record として、将来の IDP backend plugin が所有する。
+Project / Environment / Template の desired state は ADR 0001 に従って Git / Catalog に寄せる。Intent / Plan / ActionRun / OperationLog は runtime / audit record として IDP backend plugin が所有する。現在の `plugins/idp-backend` は最小 contract と in-memory store を実装しており、durable persistence、write API、approval enforcement は未完成である。
 
 ## 製品原則
 

@@ -1,7 +1,8 @@
 # ADR 0001: IDP 管理モデルの source of truth
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-06-16
+- Accepted: 2026-08-01
 
 ## 背景
 
@@ -40,7 +41,7 @@ Backstage にはすでに Catalog と Scaffolder という基本機能があり�
 - desired state について Git review、history、rollback を維持できます。
 - 高頻度 runtime data を Catalog entity から切り離せます。
 - Backstage の hard fork 化や将来の OSS plugin adoption を阻害するリスクを下げられます。
-- 将来の IDP backend plugin に明確な責務境界を与えられます。
+- IDP backend plugin に明確な責務境界を与えられます。
 
 ### 悪い影響 / trade-off
 

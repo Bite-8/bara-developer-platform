@@ -39,23 +39,19 @@ Backstage を土台に、アップデート追従性と OSS plugin 互換性を�
 - `docs/adr/0002-ai-action-approval-boundary.md`: AI action、approval、permission、audit の境界。
 - `docs/backstage-extension-policy.md`: Backstage 拡張時の plugin / module / extension 方針。
 - `docs/reviews/`: 直近の製品レビュー、未解決事項、次サイクルへの学習。
-- `docs/ai/output/`: 既存の cycle、Implementer、Quality Reviewer、Product Reviewer の最新成果物。
+- `docs/ai/output/README.md`: 過去の AI 成果物の位置づけ。個別の `docs/ai/output/**` は historical evidence であり、通常の必読対象ではない。未完了 PR / Issue の再開、過去判断の確認、または reviewer から明示された証跡確認に必要な範囲だけ読む。
 
-上記を読んでも判断に必要な証跡が不足する場合は、停止せず、利用可能な証跡から次に検証可能な小さな一歩を選び、未確認事項とリスクを成果物に明記する。
+上記を読んでも判断に必要な証跡が不足する場合は、停止せず、利用可能な証跡から次に検証可能な小さな一歩を選び、未確認事項とリスクを Issue または PR evidence に明記する。
 
 ## 開発サイクルのトリガーと責務
 
-ユーザーが「開発して」「定期実行して」「開発サイクルを実行して」「開発を進めて」、または同等の意図を示した場合、メイン agent は `$run-idp-development-cycle` に従い、次の自律製品運営サイクルを開始する。追加の確認は不要とする。運営サイクルは単一機能や単一 Issue に固定せず、対象をゼロ件、1 件、または複数件とし、各対象を独立して検証・公開可能な配達単位に分ける。
+ユーザーが「開発して」「開発を進めて」「開発サイクルを実行して」、または同等の意図を示した場合、メイン agent は `$run-idp-development-cycle` を唯一の暗黙起動 entry として使い、未完了 PR / Issue の再開を最初に確認してから次の一歩を進める。追加の確認は不要とする。
 
-1. メイン agent は `$discover-idp-opportunities` を使い、実行中の app の UI / API 導線、リポジトリ、既存の成果物・レビュー、GitHub Issue、公開されたユーザーニーズを調査する。根拠のある UI / UX・機能・外部連携・ライブラリ導入候補を重複確認後に backlog Issue として作成または更新する。Issue 化は実装決定ではない。
-2. メイン agent は `$select-product-outcome` を使い、候補 Issue と既存 backlog を比較し、今回の成果群、優先順位、受入条件、非対象、成果仮説を決定する。各受入条件には、前提データ、操作または request、期待結果、自動検証、独立 reviewer の観測方法を対応付ける。
-3. メイン agent は配達単位を直接実施するか `implementer` に委譲するかを決める。小さな docs / configuration / 調査は直接実施してよい。実装、テスト、または独立した実装コンテキストが有益な配達単位は `implementer` に委譲する。並行実装は、変更範囲の所有権または worktree を分離できる場合に限る。
-4. 変更がある配達単位では、実施担当が実装、検証、意図的な commit、push、通常の GitHub Pull Request 作成を行う。Draft PR は用いない。PR には変更内容、利用者・開発者への影響、実行した検証、残余リスク、受入条件ごとの再現手順と期待結果を含む Review guide、PR head SHA を残す。実装者の self-review は独立レビューではなく、approve / merge をしない。
-5. メイン agent は PR の current head を対象に `quality-reviewer` を実行する。利用者の挙動、UI / UX、API contract、または成果仮説を変える PR は、同じ head に対して `product-reviewer` も実行する。両者は並行してよく、互いの verdict を前提にしない。docs / internal configuration のみで利用者挙動を変えない場合は Product Reviewer を省略できるが、その理由を cycle record に残す。
-6. reviewer が Fail、重要な未検証、または blocking finding を報告した場合、メイン agent は修正、再検証、PR head 更新を行わせ、変更された head に対して必要な reviewer を再実行する。旧 head の Pass を新しい head に流用しない。
-7. 必要な review が全て current head SHA を Pass とし、必須 CI が成功し、PR が merge 可能で、未解決の blocking finding がない場合だけ、メイン agent は `$merge-reviewed-pr` に従って merge または merge queue への投入を行う。GitHub の `Approve` 操作は必須ではない。条件を満たさない場合は merge せず、保留または差し戻し理由と次の作業を記録する。
+既定のサイクル範囲は 1 delivery unit とする。複数 delivery unit は、互いに利用者価値と変更範囲が独立し、ファイル所有権または worktree を分けられ、各 unit を個別に検証・review・merge 判断でき、並行化が cycle time を短縮する場合に限る。選ぶべき delivery unit がない場合も有効な結果として、根拠、更新した Issue、次の観測条件を記録する。
 
-ここでの「定期」は、ユーザーの依頼ごとにこのサイクルを実行する意味であり、時刻に基づく自動起動を意味しない。実時間で自動実行する場合は、別途 Codex を起動するスケジューラを構成する。
+「定期実行して」はスケジューラ設定の intent として扱う。ユーザーがこの場で開発サイクル実行を求めていることが明らかな場合だけ `$run-idp-development-cycle` を実行し、時刻に基づく自動起動を暗黙に構成しない。
+
+詳細フローと内部 skill の使い分けは `.codex/skills/run-idp-development-cycle/SKILL.md` を正とする。`$discover-idp-opportunities`、`$select-product-outcome`、`$merge-reviewed-pr` は run skill から明示的に呼ぶ内部手順であり、ユーザーの一般的な「開発して」依頼から個別に暗黙起動しない。
 
 ## レビューと動作確認の契約
 
@@ -65,7 +61,8 @@ Backstage を土台に、アップデート追従性と OSS plugin 互換性を�
 - UI を変更する場合は、対象利用者が行う主要導線を少なくとも一つ定義し、可能な限り Playwright E2E test で自動化する。自動化できない場合は、理由と手動再現手順を PR に残す。
 - backend API または domain logic を変更する場合は、正常系と主要な拒否・境界条件を対象 test または integration test で確認する。
 - 起動確認はプロセスが port を開いたことだけでは足りない。対象の UI 操作または API request が期待結果を返すことまで確認する。
-- Quality Reviewer と Product Reviewer は Implementer の結果を転載せず、PR の commit を対象に必要な確認を独立して行う。成果物には PR URL、base branch、reviewed head SHA、受入条件の Pass / Fail / 未検証、verdict を残す。
+- PR 固有の実装・review evidence は、対象 PR への追加 commit ではなく、PR body、Issue、または reviewed SHA を明記した GitHub comment / check に残す。repo 内 docs は長寿命の製品判断、方針、設計記録に限る。
+- Quality Reviewer と Product Reviewer は Implementer の結果を転載せず、PR の固定 commit を対象に必要な確認を独立して行う。結果は `PASS` / `FAIL` / `UNVERIFIED` に統一し、PR URL、base branch、reviewed head SHA、AC ごとの結果、verdict を GitHub comment / check またはメイン agent への返答に残す。PR head が変わった場合、旧 SHA の verdict を新 SHA に流用しない。
 - Secret、token、個人情報、または副作用を伴う本番操作をレビュー手順・fixture・証跡に使わない。外部環境が必要で再現できない場合は、必要な環境と未検証理由を明示する。
 
 ## 変更後の品質確認・起動確認
@@ -81,12 +78,11 @@ yarn test --watch=false
 yarn start
 ```
 
-UI 導線を変更した場合は、Playwright browser を準備して `yarn test:e2e` も実行する。E2E の browser が未導入なら `yarn exec playwright install chrome --no-shell` を一度実行する。常駐する `yarn start` は readiness と対象導線を確認した後に終了してよい。実行不能または失敗した必須確認は、成功扱いにせず PR と成果物に理由・影響・再現手順を記録する。
+UI 導線を変更した場合は、Playwright browser を準備して `yarn test:e2e` も実行する。E2E の browser が未導入なら `yarn exec playwright install chrome --no-shell` を一度実行する。常駐する `yarn start` は readiness と対象導線を確認した後に終了してよい。実行不能または失敗した必須確認は、成功扱いにせず PR body、Issue、または reviewed SHA 付き GitHub comment / check に理由・影響・再現手順を記録する。
 
 ## 成果物
 
-- メイン agent は各運営サイクルの最終記録を `docs/ai/output/cycle/` に保存する。記録には Project goal、探索・選定の根拠、受入条件、Issue / PR URL、PR ごとの current head SHA、委譲判断、reviewer の成果物と verdict、merge または保留判断、未解決事項、次サイクルへの学びを含める。
-- `.codex/agents/` の custom agent を使った場合、担当 agent は最終成果物を Markdown として `docs/ai/output/<agent-name>/` に保存する。
-- ファイル名は `NNN-<内容を表すkebab-case名>.md` とし、`NNN` は保存先ごとに `001` から始まる 3 桁の連番とする。保存前に対象ディレクトリを確認し、既存の最大番号に 1 を加える。既存ファイルを上書きしない。
-- 成果物の先頭には、タイトル、作成日、実施者または agent 名、依頼内容または対象範囲を記載する。見出し、本文、メタデータは日本語で記述する。コード、コマンド、ファイルパス、API 名などの固有表記は原文のままでよい。
-- 一時的な調査ログや生のコマンド出力は保存せず、意思決定やレビューに必要な最終成果物だけを保存する。Secret、token、個人情報の値は成果物、レビュー、検証証跡に記録しない。
+- repo に保存する成果物は、製品方針、ADR、設計、運用ルールなど長寿命の判断に限る。
+- delivery unit 固有の実装 evidence、AC matrix、validation、review verdict、merge / hold 判断は、PR body、Issue、または reviewed SHA 付き GitHub comment / check を正本とする。
+- historical evidence として残っている `docs/ai/output/**` は削除しないが、新しい PR 固有成果物を対象 PR に追加 commit しない。
+- Secret、token、個人情報の値は成果物、レビュー、検証証跡に記録しない。
