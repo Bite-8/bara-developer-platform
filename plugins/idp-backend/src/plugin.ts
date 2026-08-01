@@ -6,7 +6,7 @@ import { catalogServiceRef } from '@backstage/plugin-catalog-node';
 
 import { ControlContextService } from './controlContextService';
 import { createRouter } from './router';
-import { InMemoryRuntimeAuditStore } from './runtimeStore';
+import { createRuntimeAuditStore } from './runtimeStore';
 
 export const idpPlugin = createBackendPlugin({
   pluginId: 'idp',
@@ -14,11 +14,12 @@ export const idpPlugin = createBackendPlugin({
     env.registerInit({
       deps: {
         catalog: catalogServiceRef,
+        database: coreServices.database,
         httpAuth: coreServices.httpAuth,
         httpRouter: coreServices.httpRouter,
       },
-      async init({ catalog, httpAuth, httpRouter }) {
-        const runtimeStore = new InMemoryRuntimeAuditStore();
+      async init({ catalog, database, httpAuth, httpRouter }) {
+        const runtimeStore = await createRuntimeAuditStore(database);
         const controlContext = new ControlContextService(catalog, runtimeStore);
 
         httpRouter.use(
