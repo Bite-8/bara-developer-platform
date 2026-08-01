@@ -372,7 +372,11 @@ export class ControlContextService {
     }
 
     const actor = auditActorForCredentials(options.credentials);
-    const now = new Date().toISOString();
+    // A dry-run can only exist after its Plan. Keep that causal ordering even
+    // when both records would otherwise receive the same millisecond timestamp.
+    const now = new Date(
+      Math.max(Date.now(), Date.parse(plan.createdAt) + 1),
+    ).toISOString();
     const idPart = stableIdPart(options.request.idempotencyKey);
     const actionRunRef = `action-run:dry-run-${idPart}`;
     const resultSummary =
