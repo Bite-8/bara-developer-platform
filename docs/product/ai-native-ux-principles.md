@@ -85,7 +85,7 @@ chat を採用する場合も、汎用会話欄ではなく、選択中 context�
 
 - Backstage の新 frontend system は、plugin、extension、override を通じて機能と画面を差し替え・追加できるため、hard fork せず UX 仮説を検証できます。
   - https://backstage.io/docs/frontend-system/architecture/plugins/
-  - https://backstage.io/docs/frontend-system/building-plugins/
+  - https://backstage.io/docs/frontend-system/building-plugins/index/
 - Backstage UI は consistent、accessible、extensible な baseline と、個別 brand への customization の両立を目的にしています。
   - https://ui.backstage.io/
 - AI coding assistant の longitudinal study は、知覚生産性が高くても flow と cognitive load が悪化し得ると報告しています。AI 機能は生成量だけでなく developer experience を観測します。

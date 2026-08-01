@@ -1,6 +1,6 @@
 interface:
   display_name: '運営サイクルの成果群選定'
-  short_description: '根拠と仮説から既定1件の成果とIssueを決定する'
-  default_prompt: 'Use $select-product-outcome to choose and issue the default single delivery outcome from the Project goal and evidence.'
+  short_description: '複数案を比較しdelivery waveとbacklogを決定する'
+  default_prompt: 'Use $select-product-outcome to compare evidence-backed options and issue a coherent delivery wave plus decision-ready backlog from the Project goal.'
 policy:
   allow_implicit_invocation: false
