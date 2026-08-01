@@ -5,6 +5,8 @@ import {
   IdpProjectControlContext,
   IdpTemplate,
   IdpTemplateExecution,
+  IdpTemplatePlanPreview,
+  IdpTemplatePlanPreviewInput,
 } from '../types';
 import { IdpApi, TemplateExecutionInput } from './idpApi';
 
@@ -13,7 +15,10 @@ type FetchLike = typeof fetch;
 const unsupported = <T>(message: string): Promise<T> =>
   Promise.reject(new Error(message));
 
-export class BackendIdpApi implements Pick<IdpApi, 'getProjectControlContext'> {
+export class BackendIdpApi
+  implements
+    Pick<IdpApi, 'getProjectControlContext' | 'createTemplatePlanPreview'>
+{
   constructor(
     private readonly options: {
       baseUrl: string;
@@ -33,6 +38,27 @@ export class BackendIdpApi implements Pick<IdpApi, 'getProjectControlContext'> {
     if (!response.ok) {
       throw new Error(
         `IDP backend control context request failed: ${response.status}`,
+      );
+    }
+
+    return response.json();
+  }
+
+  async createTemplatePlanPreview(
+    input: IdpTemplatePlanPreviewInput,
+  ): Promise<IdpTemplatePlanPreview> {
+    const response = await (this.options.fetchApi ?? fetch)(
+      `${this.options.baseUrl}/plans/template-preview`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(input),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `IDP backend Plan preview request failed: ${response.status}`,
       );
     }
 

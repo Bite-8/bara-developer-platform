@@ -194,6 +194,41 @@ export type IdpControlOperationLog = {
   policyDecision?: IdpPolicyDecision;
 };
 
+export type IdpPlanSummary = {
+  id: string;
+  kind: 'Plan';
+  planRef: string;
+  actor: {
+    entityRef: string;
+    type: 'user' | 'group' | 'service' | 'agent';
+  };
+  targetEntityRef: string;
+  eventType: 'plan.created';
+  createdAt: string;
+  status: IdpRuntimeStatus;
+  expectedChangeSummary: string;
+  requiredApproval: 'none' | 'owner' | 'environment-owner' | 'manual';
+  riskSummary?: IdpRiskSummary;
+  policyDecision?: IdpPolicyDecision;
+};
+
+export type IdpTemplatePlanPreviewInput = {
+  projectRef: string;
+  environmentRef?: string;
+  templateRef: string;
+  parameters: Record<string, unknown>;
+  actor: {
+    entityRef: string;
+    type: 'user' | 'group' | 'service' | 'agent';
+  };
+  idempotencyKey: string;
+};
+
+export type IdpTemplatePlanPreview = {
+  plan: IdpPlanSummary;
+  operationLog: IdpControlOperationLog;
+};
+
 export type IdpProjectControlContext = {
   projectRef: string;
   project: {
@@ -213,13 +248,7 @@ export type IdpProjectControlContext = {
     reasons: string[];
   };
   recentOperationLogs: IdpControlOperationLog[];
-  latestPlan?: {
-    planRef: string;
-    status: IdpRuntimeStatus;
-    expectedChangeSummary: string;
-    riskSummary?: IdpRiskSummary;
-    policyDecision?: IdpPolicyDecision;
-  };
+  latestPlan?: IdpPlanSummary;
   latestActionRun?: {
     actionRunRef: string;
     status: IdpRuntimeStatus;
