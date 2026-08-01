@@ -40,6 +40,21 @@ UI / UX の delivery candidate は GitHub Issue に次を持ちます。
 
 初期段階では safe fixture による task-based observation、Playwright E2E、owner / reviewer の定性観測を使います。利用者数が増えたら、同意・privacy・retention を定義したうえで plugin analytics と task outcome を接続します。十分な traffic がない段階で A/B test の統計的有意性を装いません。
 
+### 複数の方法と案を使う
+
+意味のある UX 判断では、一つの screenshot、サイト、analysis method だけで結論を出しません。課題に relevant な方法を複数組み合わせます。
+
+- 複数の developer portal、control plane、運用 tool、類似した一般 product の公開 journey benchmark
+- task analysis、cognitive walkthrough、journey mapping
+- usability heuristic、information architecture、error-recovery review
+- accessibility review
+- safe fixture を使った owner / reviewer の task-based observation
+- prototype、feature flag、preview route による interaction 比較
+
+複数 product を見る目的は見た目を模倣することではなく、同じ task をどう構造化し、何を省略し、どこで feedback / risk / recovery を示すかを比較することです。調査 subagent には異なるサイト群または analysis lens を割り当て、初期案を独立に作らせます。
+
+メイン agent は原則 2〜4 案を比較し、暫定推奨、trade-off、選外理由、判断を変える追加証拠を Issue に残します。Product Reviewer は実装後の使いやすさだけでなく、選択した案が観測された課題と alternatives に照らして妥当かを確認します。
+
 ## AI interaction を解法より先に固定しない
 
 AI chat は候補となる interaction の一つであり、AI-native の同義語ではありません。Project / Environment context で次の判断を支援する場合、少なくとも次を比較します。

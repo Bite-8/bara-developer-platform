@@ -54,6 +54,8 @@ delivery wave に複数 unit を含める場合、利用者価値、依存関係
 
 decision-ready だが今回の wave に含めない候補は捨てず、GitHub Issue として価値、優先順位、依存関係、選外理由を残す。変化する backlog 状態は GitHub を正本とし、repo 内 docs に二重管理しない。分解と delivery wave の詳細は `docs/how-to-plan-delivery-waves.md` を正とする。
 
+意味のある UI / UX、機能、architecture、外部 integration の不確実性がある場合は、最初の思いつきをそのまま実装しない。異なる evidence source と analysis lens を持つ複数 subagent で独立に調査・案出しし、メイン agent が候補、根拠、trade-off、未確認事項を比較して暫定推奨を選ぶ。subagent は初期案出しでは互いの結論を参照せず、anchoring と重複を避ける。暫定推奨と選ばなかった有力案は Issue に残し、owner と Product Reviewer が比較できるようにする。軽微な bug、機械的変更、既に受入条件で解法が決まっている変更に、形式的な複数案を要求しない。
+
 「定期実行して」はスケジューラ設定の intent として扱う。ユーザーがこの場で開発サイクル実行を求めていることが明らかな場合だけ `$run-idp-development-cycle` を実行し、時刻に基づく自動起動を暗黙に構成しない。
 
 詳細フローと内部 skill の使い分けは `.codex/skills/run-idp-development-cycle/SKILL.md` を正とする。`$discover-idp-opportunities`、`$select-product-outcome`、`$merge-reviewed-pr` は run skill から明示的に呼ぶ内部手順であり、ユーザーの一般的な「開発して」依頼から個別に暗黙起動しない。

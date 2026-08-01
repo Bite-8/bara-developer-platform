@@ -33,6 +33,8 @@ description: Internal run-idp-development-cycle step. Select and issue the evide
 
 UI / UX unit は `docs/product/ai-native-ux-principles.md` に従い、Backstage 標準または現在の Bara UI を baseline とする。baseline observation、変更仮説、比較する interaction 案、成功 / 失敗の観測、revert または次の判断を Issue に持たせる。AI chat、recommended-action card、guided workflow など特定 UI pattern を課題観測より先に正解としない。
 
+discovery が複数の solution option を返した場合、候補を根拠、利用者価値、trade-off、Backstage / architecture 適合性、検証可能性、可逆性で比較する。メイン agent は現時点の暫定推奨を明示して delivery wave を選ぶが、有力な選外案と判断を変える追加証拠も Issue に残す。owner と Product Reviewer が alternatives を追跡できない状態で「best」と断定しない。不確実性が大きい場合は、複数案を本実装するのではなく、prototype / feature flag / discovery unit で安く比較してから収束する。
+
 利用可能な候補または backlog item を、互いに独立して評価できる粒度で比較する。各候補について、次を一貫した粒度で記す。
 
 - 対象利用者と利用者価値
@@ -87,6 +89,16 @@ IDP 利用者の UX と観測可能な利用者価値を、運用負荷の削減
 - 対象利用者・成果指標:
 - Dependency graph:
 - 今回の delivery wave 終了条件:
+
+## Solution options と暫定推奨
+
+| Option | 根拠 | 利用者価値 | Trade-off | 検証方法 | 選択判断 |
+| ------ | ---- | ---------- | --------- | -------- | -------- |
+
+- 暫定推奨と確信度:
+- 選ばなかった有力案:
+- 判断を変える追加証拠:
+- 複数案を省略した場合の理由:
 
 ## 今回の delivery wave
 

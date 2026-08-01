@@ -4,14 +4,15 @@
 
 ## 役割と責務
 
-| 担当               | 主な責務                                                                                                      | 使う場面                                            | 主な出力                                             |
-| ------------------ | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- | ---------------------------------------------------- |
-| メイン agent       | 製品ゴールの解釈、resume-first 判断、機会探索、backlog / 成果選定、委譲、レビュー結果の統合、merge / 保留判断 | すべての開発サイクル                                | Issue / PR 更新、review 統合、merge 判断             |
-| `implementer`      | 選択済み配達単位の実装、検証、commit / push、通常 PR の作成                                                   | 実装または独立した実装コンテキストが必要なとき      | PR body / Issue 上の実装・検証 evidence、PR          |
-| `quality-reviewer` | 同一 PR head の技術品質、安全性、回帰、Backstage 互換性を独立検証                                             | 変更 PR の merge 評価前                             | 固定 SHA への `PASS` / `FAIL` / `UNVERIFIED` verdict |
-| `product-reviewer` | 同一 PR head の利用者価値、UI / UX、API contract、受入条件を独立検証                                          | 利用者挙動または成果仮説を変える PR の merge 評価前 | 固定 SHA への `PASS` / `FAIL` / `UNVERIFIED` verdict |
+| 担当               | 主な責務                                                                                                      | 使う場面                                             | 主な出力                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------- |
+| メイン agent       | 製品ゴールの解釈、resume-first 判断、機会探索、backlog / 成果選定、委譲、レビュー結果の統合、merge / 保留判断 | すべての開発サイクル                                 | Issue / PR 更新、review 統合、merge 判断             |
+| `product-explorer` | 指定された利用者 journey / evidence source / analysis lens を独立調査し、候補と根拠を返す                     | 解法に意味のある不確実性があり、複数案を発散するとき | read-only observation、候補、trade-off、未確認事項   |
+| `implementer`      | 選択済み配達単位の実装、検証、commit / push、通常 PR の作成                                                   | 実装または独立した実装コンテキストが必要なとき       | PR body / Issue 上の実装・検証 evidence、PR          |
+| `quality-reviewer` | 同一 PR head の技術品質、安全性、回帰、Backstage 互換性を独立検証                                             | 変更 PR の merge 評価前                              | 固定 SHA への `PASS` / `FAIL` / `UNVERIFIED` verdict |
+| `product-reviewer` | 同一 PR head の利用者価値、UI / UX、API contract、受入条件を独立検証                                          | 利用者挙動または成果仮説を変える PR の merge 評価前  | 固定 SHA への `PASS` / `FAIL` / `UNVERIFIED` verdict |
 
-`opportunity-proposer` と `product-owner` は custom agent としては廃止し、役割の方法を `$discover-idp-opportunities` と `$select-product-outcome` に移しました。これによりメイン agent も同じ手順を実行でき、常に subagent を起動する必要がありません。
+旧 `opportunity-proposer` と `product-owner` の意思決定責務は `$discover-idp-opportunities` と `$select-product-outcome` に置き、メイン agent が統合判断を行います。`product-explorer` は Product Owner の代わりではなく、指定された異なる lens で独立した根拠と案を返す read-only subagent です。
 
 ユーザーの一般的な「開発して」「開発を進めて」依頼から暗黙起動する skill は `$run-idp-development-cycle` だけです。`$discover-idp-opportunities`、`$select-product-outcome`、`$merge-reviewed-pr` は run skill が明示的に使う内部手順、またはユーザーが個別 skill を明示した場合の手順として扱います。
 

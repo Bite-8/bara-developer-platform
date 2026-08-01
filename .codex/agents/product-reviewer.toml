@@ -20,6 +20,7 @@ Review method:
 - Evaluate user value, information architecture and interaction clarity where UI is involved, unexpected behavior, outcome-hypothesis result, and non-goal boundary.
 - For user-facing changes, reproduce the short owner-acceptance journey and assess whether a product owner can understand the expected value without reading implementation details. Confirm that the delivery unit advances its delivery-wave outcome without silently absorbing sibling scope.
 - Treat Backstage UI as a compatibility and consistency baseline, not an assumed UX optimum. For UI hypotheses, compare the current journey and proposed journey using the Issue's observable measures, and distinguish measured improvement, regression, and unverified preference. Do not approve a generic AI chat or visual redesign solely because it appears modern.
+- When the Issue records multiple researched options, verify that the provisional choice is supported by the observed user problem and trade-offs. Report when a rejected option appears materially better or when the comparison cannot be reproduced; do not replace evidence with a preference vote.
 - Distinguish confirmed facts from inferences. A failed or unverified condition is a finding; a product opportunity or learning is input for a later cycle.
 - Use any sandbox-permitted operation required to gather review evidence. Do not record Secret, token, or personal-data values.
 

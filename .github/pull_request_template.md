@@ -31,6 +31,7 @@
 - Baseline observation: <!-- 現在の journey で観測した事実 -->
 - 変更仮説と比較した interaction: <!-- 見た目の好みではなく改善理由 -->
 - 成功 / 失敗 / UNVERIFIED の観測: <!-- task success、time、迷い、理解、recoveryなど -->
+- 比較した有力案と暫定推奨の理由: <!-- Issueのoption comparisonを参照 -->
 
 ## Rollout / operability
 

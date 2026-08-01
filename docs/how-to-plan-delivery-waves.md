@@ -26,6 +26,22 @@ backlog の状態、担当、優先順位、PR 固有 evidence を repo 内 docs
 
 候補数を増やすこと自体は目的ではありません。同じ利用者課題を細かく切っただけの Issue は統合し、reviewer が別々に価値を判定できない変更は同じ unit に含めます。一方、UI、API、migration、運用準備を一つの巨大 PR にまとめないようにします。
 
+## 調査を発散してから収束する
+
+解法に意味のある不確実性がある場合、メイン agent は異なる lens の product-explorer を並行起動します。各 explorer は最初は他の案を見ず、指定された利用者 journey、外部 benchmark、analysis method、Backstage feasibility などを独立に調べます。これにより、最初の案への anchoring と、一人の文脈に全ての観測が混ざることを避けます。
+
+メイン agent は結果を統合し、重複を除いた原則 2〜4 案について次を比較します。
+
+- 観測した利用者課題と根拠
+- 期待する task outcome
+- interaction または technical approach
+- trade-off、risk、Backstage compatibility
+- 最小の検証方法と revert 可能性
+
+そのうえで「現時点の暫定推奨」を選びます。多数決や agent 数ではなく、根拠の質、成果仮説、検証コストで判断します。選ばなかった有力案と、追加証拠によって判断が変わる条件も Issue に残し、owner と Product Reviewer が比較できるようにします。
+
+不確実性が大きく UI の差を文章だけで比較できない場合、複数の完成機能を同時に作らず、prototype、feature flag、Storybook、preview route などの安い比較 unit を先に選びます。軽微な bug、機械的変更、決定済み仕様では発散を省略し、その理由を記録します。
+
 ## 並行と順次を選ぶ
 
 dependency graph 上で predecessor が完了した unit を ready unit と呼びます。次を全て満たす ready unit は、subagent の強みを活かして原則並行実施します。

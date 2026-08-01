@@ -48,7 +48,7 @@ wave は無制限に広げない。利用者価値が一文で説明でき、uni
 ## サイクルを進める
 
 1. resume-first の確認で再開対象を決める。再開対象があれば新規探索を省略し、関連 Issue / PR の不足を埋める。
-2. 新規候補が必要な場合だけ `$discover-idp-opportunities` をメイン agent が実行し、実行中の製品、リポジトリ、backlog、直近のレビュー、必要な公開情報から read-only の候補レポートを作る。discovery は Issue を作成・更新しない。
+2. 新規候補が必要な場合だけ `$discover-idp-opportunities` をメイン agent が実行し、実行中の製品、リポジトリ、backlog、直近のレビュー、必要な公開情報から read-only の候補レポートを作る。解法に意味のある不確実性がある場合は、異なる journey / source / analysis lens を持つ `product-explorer` を利用可能な枠で並行起動し、独立調査を発散させる。メイン agent が 2〜4 案、trade-off、暫定推奨へ統合する。discovery は Issue を作成・更新しない。
 3. `$select-product-outcome` をメイン agent が実行し、initiative、decision-ready backlog、今回扱う 0 件以上の coherent delivery wave、各 unit の受入条件、依存関係、非対象、リスク、成果仮説、終了条件を決定する。selection だけが GitHub Issue の作成・更新を行う。decision-ready な選外候補も Issue に残す。
 4. delivery unit ごとに実施形態を決める。小さな docs / configuration / 調査の変更はメイン agent が直接行ってよい。実装、テスト、複数ファイルの変更、または独立した実装コンテキストが有益なものは unit ごとに `implementer` に委譲する。ready unit は ownership または worktree を分け、利用可能な subagent 枠まで同時に起動する。メイン agent も競合しない unit または統合を進め、枠が空いたら次の ready unit を補充する。依存 unit は predecessor の merge 後に順次実装する。
 5. 変更がある delivery unit は、実施担当が focused validation、意図的な commit、push、通常の GitHub Pull Request 作成を行う。PR body には変更内容、影響、検証、残余リスク、受入条件ごとの Review guide、関連 Issue、immutable head commit SHA を残す。実装者の self-review は独立レビューではなく、approve / merge をしない。
@@ -63,7 +63,7 @@ wave は無制限に広げない。利用者価値が一文で説明でき、uni
 
 write-heavy な並行 unit は同じ working tree で実施せず、worktree または明確に分離された所有ファイルを使う。探索、test、review、log 分析など read-heavy な作業は、context pollution を避けるため積極的に subagent へ分ける。同じ prompt の agent 数を増やすより、implementer、Quality Reviewer、Product Reviewer のように異なる観測目的を持たせる。
 
-各委譲について、unit、role、branch / worktree、所有範囲、期待 artifact、開始状態、最終 status、停止理由の receipt をメイン agent が追跡する。一定時間、tool activity、編集、status 応答のいずれも観測できない場合は status を要求し、応答しなければ interrupt して再委譲またはメイン agent が引き継ぐ。沈黙を成功または failure と推測しない。
+各委譲について、unit または research lens、role、branch / worktree、所有範囲または source scope、初期 prompt で sibling 結論を除外したか、期待 artifact、開始状態、最終 status、停止理由の receipt をメイン agent が追跡する。一定時間、tool activity、編集、status 応答のいずれも観測できない場合は status を要求し、応答しなければ interrupt して再委譲またはメイン agent が引き継ぐ。沈黙を成功または failure と推測しない。
 
 ## evidence と終了条件
 
