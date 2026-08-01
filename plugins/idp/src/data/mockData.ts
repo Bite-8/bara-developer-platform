@@ -16,7 +16,7 @@ export const projects: IdpProject[] = [
     owner: 'group:default/guests',
     repositories: [],
     relatedCatalogEntityRefs: ['system:default/examples'],
-    environmentIds: [],
+    environmentIds: ['examples-dev'],
     templateIds: ['node-api'],
     status: 'active',
     createdAt: '2026-07-31T00:00:00Z',
@@ -104,6 +104,20 @@ export const projects: IdpProject[] = [
 ];
 
 export const environments: IdpEnvironment[] = [
+  {
+    id: 'examples-dev',
+    projectId: 'examples',
+    name: 'examples-dev',
+    type: 'dev',
+    deploymentStatus: 'running',
+    appStatus: 'running',
+    infraStatus: 'running',
+    alertStatus: 'normal',
+    repository: 'https://github.com/acme/examples',
+    relatedCatalogEntityRefs: ['resource:default/examples-dev'],
+    createdAt: '2026-07-31T00:00:00Z',
+    updatedAt: '2026-07-31T00:00:00Z',
+  },
   {
     id: 'ec-dev',
     projectId: 'ec-platform',
