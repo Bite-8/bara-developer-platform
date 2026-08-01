@@ -1,0 +1,4 @@
+interface:
+  display_name: 'IDP 開発サイクル実行'
+  short_description: '発見から独立レビューと merge 判断まで進める'
+  default_prompt: 'Use $run-idp-development-cycle to advance Bara Developer Platform from evidence-backed discovery through review and merge evaluation.'

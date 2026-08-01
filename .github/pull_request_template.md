@@ -20,6 +20,13 @@
 - [ ] `yarn test:e2e`（UI 導線を変更した場合）
 - [ ] 起動した app / backend に対して Review guide の対象操作を確認
 
+## Review handoff
+
+- PR head commit SHA: <!-- reviewer が確認する immutable SHA -->
+- Quality review artifact / verdict: <!-- docs/ai/output/quality-reviewer/... と Pass / Fail / 未検証 -->
+- Product review artifact / verdict: <!-- 必要な場合。省略時は利用者挙動を変えない理由 -->
+- Merge decision: <!-- main agent が同一 SHA の review と CI を確認後に記載 -->
+
 ## 残余リスク・未検証事項
 
 <!-- なければ「なし」。実行不能な確認は理由、影響、再現に必要な環境を記載する。Secret や個人情報は書かない。 -->

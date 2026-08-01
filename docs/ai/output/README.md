@@ -1,14 +1,15 @@
-# Subagent Outputs
+# Agent Outputs
 
-Codex custom agents の最終成果物を agent ごとに保存します。Project-local の自律製品運営サイクルでは、Opportunity Proposer の探索・backlog、Product Owner の優先順位・完了判断、Implementer の PR、品質レビュー、製品レビューを後から追跡できる完成版だけを保存します。
+Codex の開発サイクルで、意思決定・実装・独立レビュー・merge 判断に必要な完成版だけを保存します。メイン agent の記録は `cycle/`、custom agent の記録は `.codex/agents/*.toml` の `name` ごとのディレクトリに置きます。
 
 ```text
+docs/ai/output/cycle/NNN-<descriptive-kebab-case-name>.md
 docs/ai/output/<agent-name>/NNN-<descriptive-kebab-case-name>.md
 ```
 
-- `<agent-name>` は `.codex/agents/*.toml` の `name` を使います。
-- `NNN` は agent ごとの 3 桁連番です。既存の最大番号に 1 を加え、上書きしません。
+- `NNN` は保存先ごとの 3 桁連番です。既存の最大番号に 1 を加え、上書きしません。
+- cycle record には Project goal、探索・選定の根拠、受入条件、Issue / PR URL、current PR head SHA、reviewer 成果物と verdict、merge / 保留判断、未解決事項を残します。
+- reviewer 成果物には、PR URL、base branch、reviewed head SHA、AC ごとの Pass / Fail / 未検証、verdict を残します。
 - 一時ログではなく、意思決定・実装・品質レビュー・プロダクトレビューに必要な完成版だけを保存します。
-- 担当 agent または Product Owner が成果物を保存します。保存者の違いで内容や採番規則を変えません。
-- 成果物の見出し、本文、メタデータは日本語で記述します。コード、コマンド、ファイルパス、API 名などの固有表記は原文のままで構いません。
+- 見出し、本文、メタデータは日本語で記述します。コード、コマンド、ファイルパス、API 名などの固有表記は原文のままで構いません。
 - Secret、token、個人情報の値は保存しません。

@@ -1,11 +1,11 @@
 ---
 name: select-product-outcome
-description: Select, issue, and record the delivery, discovery, or maintenance outcomes for a product operations cycle from evidence-backed candidates. Use when a Product Owner must compare IDP opportunity candidates and backlog Issues, define cycle priorities, acceptance conditions, and learning hypotheses, or turn product-review findings into the next cycle decision.
+description: Select, issue, and record evidence-backed delivery, discovery, or maintenance outcomes for an IDP development cycle. Use after opportunity discovery, whether selection is done by the main agent or a delegated agent.
 ---
 
 # 今回の運営サイクルの成果群を選定する
 
-`$discover-idp-opportunities` により Opportunity Proposer が整理・Issue 化した候補と既存 backlog を、Implementer が PR として配達でき、Product Reviewer が観測できる成果群へ変換する。候補を比較し、今回の運営サイクルに含める delivery / discovery / maintenance の対象をゼロ件、1 件、または複数件選ぶ。運営サイクルを単一機能や単一 Issue に固定しない。
+`$discover-idp-opportunities` の候補と既存 backlog を、実装者が PR として配達でき、独立 reviewer が観測できる成果群へ変換する。候補を比較し、今回の運営サイクルに含める delivery / discovery / maintenance の対象をゼロ件、1 件、または複数件選ぶ。運営サイクルを単一機能や単一 Issue に固定しない。
 
 ## 根拠を集める
 
@@ -14,14 +14,14 @@ description: Select, issue, and record the delivery, discovery, or maintenance o
 - Project goal と `AGENTS.md`
 - `docs/product/`、`docs/architecture/`、ADR、`docs/reviews/`
 - 現在の実装、Git 履歴、未解決事項、最近の `docs/ai/output/` 成果物
-- 最新の Opportunity Proposer の候補・backlog 探索レポート
-- 実装・品質・製品レビューの証跡、既存 Pull Request、および必要なら実際に動かした製品の観測
+- 最新の機会探索レポート、backlog、実装・品質・製品レビューの証跡、既存 Pull Request
+- 必要なら実際に動かした製品の観測
 
 事実、推論、未確認事項を分ける。証跡が不足していても停止せず、判断を変え得る不確実性だけを記録する。
 
 ## 候補を比較する
 
-2〜4 個の、互いに独立して評価できる候補または backlog item を作る。各候補について、次を一貫した粒度で記す。
+利用可能な候補または backlog item を、互いに独立して評価できる粒度で比較する。各候補について、次を一貫した粒度で記す。
 
 - 対象利用者と利用者価値
 - 解く課題と成果仮説
@@ -29,13 +29,13 @@ description: Select, issue, and record the delivery, discovery, or maintenance o
 - 非対象、依存関係、主なリスク
 - 学習価値、緊急性、確信度、可逆性、実装規模
 
-価値と学習価値を優先する。重要なトレードオフが残っても、今回の運営サイクルで検証する成果群を選び、順序と依存関係を明示する。実装しない discovery、maintenance、または対象なしの判断も有効な結果とする。
+IDP 利用者の UX と観測可能な利用者価値を、運用負荷の削減より優先する。運用改善は、それ自体が UX、安全性、または継続提供能力をどのように支えるかを示せるときに選ぶ。重要なトレードオフが残っても、今回の運営サイクルで検証する成果群を選び、順序と依存関係を明示する。実装しない discovery、maintenance、または対象なしの判断も有効な結果とする。
 
 ## GitHub Issue を管理する
 
 候補ごとに既存の open / closed GitHub Issue を検索し、同じ利用者課題と期待成果を扱うものがないかを確認する。重複する場合は既存 Issue を再利用し、必要なら根拠と受入条件を補足する。
 
-新規かつ decision-ready な候補に Issue がない場合は、Product Owner が GitHub Issue を作成する。通常は Opportunity Proposer により Issue が作成済みなので、その Issue を再利用・更新する。Issue には少なくとも次を記載する。
+新規かつ decision-ready な候補に Issue がない場合は、GitHub Issue を作成する。Issue には少なくとも次を記載する。
 
 - 対象利用者と解く課題または機会
 - 期待する製品成果と利用者価値
@@ -47,13 +47,13 @@ description: Select, issue, and record the delivery, discovery, or maintenance o
 
 ## 決定記録を作る
 
-以下を含む完成版 Markdown を `docs/ai/output/product-owner/` の次の連番で保存し、Implementer と Reviewer に渡す。
+メイン agent が実行した場合は `docs/ai/output/cycle/`、custom agent に委譲した場合は `docs/ai/output/<agent-name>/` に、次の内容を含む完成版 Markdown として保存する。
 
 ```markdown
 # 今回の運営サイクルの成果群の決定
 
 - 作成日: YYYY-MM-DD
-- Agent: product-owner
+- 実施者: <main-agent または agent-name>
 - Project goal: <粗いゴール>
 
 ## 根拠
@@ -67,42 +67,22 @@ description: Select, issue, and record the delivery, discovery, or maintenance o
 
 ## 選択した運営サイクルの成果群
 
-<今回扱う delivery / discovery / maintenance の対象、順序、対象外を一文で表す>
-
-### 選択理由と対象利用者価値
-
-<理由>
-
 ### 受入条件
 
 | ID   | 受入条件                   | 前提データ・fixture         | 操作または request          | 期待結果         | 自動検証          | Reviewer の観測方法 |
 | ---- | -------------------------- | --------------------------- | --------------------------- | ---------------- | ----------------- | ------------------- |
 | AC-1 | <利用者から観測できる条件> | <安全な sample data / 設定> | <UI 操作または API request> | <観測可能な結果> | <test 種別・対象> | <再現手順>          |
 
-UI を変更する delivery では主要な利用者導線を少なくとも一つ含め、Playwright E2E test を原則とする。backend API / domain logic の delivery では正常系と主要な拒否・境界条件を含める。外部環境が必要で自動化できない場合は、その理由と reviewer が確認可能な代替証跡を明記する。単に「起動する」「test が通る」だけを受入条件にしない。
+### 非対象・リスク・成果仮説
 
-### 非対象
-
-- <今回含めない範囲>
-
-### リスクと軽減策
-
-- <リスク>: <軽減策または観測方法>
-
-### 成果仮説
-
-<成果が利用者価値を生む理由と、Product Reviewer が確認する証跡>
+<今回含めない範囲、軽減策、利用者価値を確認する証跡>
 
 ## GitHub Issue と配達単位
 
-- Issue: <作成または再利用した Issue URL を成果ごとに記載>
-- 種別: <delivery / discovery / maintenance>
-- 優先順位・依存関係: <今回の順序と、PR に分ける必要がある場合の境界>
-- 重複確認: <確認した Issue と再利用または新規作成の判断>
-
-## Implementer・Reviewer への引き継ぎ
-
-<各 delivery unit の Issue、受入条件表、safe fixture、関連証跡、PR Review guide 作成要件、未解決事項>
+- Issue:
+- 種別: delivery / discovery / maintenance
+- 優先順位・依存関係:
+- 実施形態: main agent が直接実施 / implementer に委譲
 ```
 
-決定後は実装方法を詳細化しない。各配達単位の技術的な分解は Implementer が行い、Product Owner は受入条件と優先順位の変更が必要なときだけ判断する。
+決定後は、各配達単位の技術的な分解を実施担当に委ねる。受入条件、優先順位、または非対象を変える場合だけ、選定を更新する。

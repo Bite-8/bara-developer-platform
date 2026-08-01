@@ -1,47 +1,34 @@
 # Codex Project-local Agent System
 
-このディレクトリは、Bara Developer Platform の Project-local な自律製品運営サイクルを定義します。最終判断者は Project goal を与え、Opportunity Proposer が機会と backlog を発見し、Product Owner が今回の対象成果群を決定し、実装、検証、レビュー、次サイクルへの学習を完結させます。運営サイクルは単一機能や単一 Issue に固定しません。
+このディレクトリは、Bara Developer Platform の開発サイクルで使う条件付き custom agent と再利用可能な skill を定義します。メイン agent が製品ゴール、機会探索、成果選定、配達の進行、merge 判断を一貫して担い、custom agent は独立した実装・技術レビュー・製品レビューの視点が価値を持つ場合だけ使います。
 
 ## 役割と責務
 
-| 役割                   | 主な責務                                                                             | 入力                                                                   | 主な出力                         |
-| ---------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- | -------------------------------- |
-| `opportunity-proposer` | 実行中の製品・ユーザーニーズ・公開情報を探索し、UI / 機能 / 連携候補を Issue 化する  | Project goal、実行中の app、リポジトリ、レビュー、既存 Issue、公開情報 | 候補 Issue、探索・backlog 成果物 |
-| `product-owner`        | backlog の優先順位、今回の対象成果群とトレードオフの決定、レビュー結果による完了判断 | Proposer 成果物、backlog、リポジトリ、レビュー                         | 運営サイクル決定・完了記録       |
-| `implementer`          | Product Owner が選んだ配達単位を実装・検証し、commit、push、通常 PR の作成まで行う   | Product Owner の運営サイクル決定、受入条件                             | 実装・検証記録、PR               |
-| `quality-reviewer`     | Implementer が作成した PR を独立して技術品質・安全性・回帰リスクの観点から検証する   | Product Owner の決定、PR、実装・検証証跡                               | 品質レビュー                     |
-| `product-reviewer`     | Quality Reviewer が通した PR を利用者価値・成果仮説・受入条件の観点から検証する      | Product Owner の決定、PR、品質証跡、動作観測                           | 製品レビューと次サイクルの学び   |
+| 担当               | 主な責務                                                                                   | 使う場面                                            | 主な出力                             |
+| ------------------ | ------------------------------------------------------------------------------------------ | --------------------------------------------------- | ------------------------------------ |
+| メイン agent       | 製品ゴールの解釈、機会探索、backlog / 成果選定、委譲、レビュー結果の統合、merge / 保留判断 | すべての開発サイクル                                | cycle record、Issue 更新、merge 判断 |
+| `implementer`      | 選択済み配達単位の実装、検証、commit / push、通常 PR の作成                                | 実装または独立した実装コンテキストが必要なとき      | 実装・検証記録、PR                   |
+| `quality-reviewer` | 同一 PR head の技術品質、安全性、回帰、Backstage 互換性を独立検証                          | 変更 PR の merge 評価前                             | 品質レビュー                         |
+| `product-reviewer` | 同一 PR head の利用者価値、UI / UX、API contract、受入条件を独立検証                       | 利用者挙動または成果仮説を変える PR の merge 評価前 | 製品レビューと学び                   |
 
-`improvement-proposer` と `project-manager` は廃止しました。前者に代わり、候補発見と Issue 化だけを担い、採否を決めない `opportunity-proposer` を採用します。後者の配達進行は Product Owner が直接担います。`product-review-packager` も廃止し、`product-reviewer` に置き換えました。
+`opportunity-proposer` と `product-owner` は custom agent としては廃止し、役割の方法を `$discover-idp-opportunities` と `$select-product-outcome` に移しました。これによりメイン agent も同じ手順を実行でき、常に subagent を起動する必要がありません。
 
 ## 開発サイクル
 
-1. `opportunity-proposer` は `$discover-idp-opportunities` を使い、実行中の app、リポジトリ、公開ニーズから UI / UX、機能、連携の候補を調査し、delivery / discovery candidate を backlog Issue として作成または更新する。
-2. `product-owner` は `$select-product-outcome` を使い、Proposer の候補と既存 backlog を比較し、今回の運営サイクルの対象成果群、優先順位、受入条件、再現可能な動作確認計画、非対象、リスク、成果仮説を決定する。
-3. `implementer` が各配達単位を実装・検証し、受入条件ごとの Review guide、commit、push、通常 PR の作成と実装成果物の保存を行う。
-4. `quality-reviewer` が同じ PR を独立レビューし、PR head で受入条件を再現する。blocking finding または未検証の重要条件は Product Owner が Implementer へ差し戻し、再レビューする。
-5. `product-reviewer` が品質を通過した PR を、実行中の UI / API による受入条件の観測を含む製品観点でレビューする。
-6. `product-owner` はレビュー結果をもとに、各配達単位の完了、修正、分割、保留を決め、運営サイクル記録と backlog を更新する。Product Reviewer の発見は次サイクルの Product Owner の入力になる。
+メイン agent は `$run-idp-development-cycle` に従い、探索、選定、実施、レビュー、merge 評価を行います。小さな docs / configuration / 調査は直接行えます。実装は `implementer` に委譲でき、review は PR head が固定された後に `quality-reviewer` と、必要な場合の `product-reviewer` を並行して実施します。
 
-center への逐次報告は行いません。center と最終判断者は Git 履歴、検証証跡、`docs/ai/output/`、未解決事項を後から観測します。最終判断者と center はこのサイクルの製品レビュー担当ではありません。
-
-## 自律性
-
-すべての Project-local Subagent は sandbox 内でゴール達成に必要な操作を自律的に行います。役割は、操作権限の制限ではなく、判断・実装・検証の観点を分けるものです。不確実性、複数の妥当な戦略、通常の依存関係、役割名、権限確認は停止理由にしません。利用可能な証跡から最善の判断を行い、次の検証可能な一歩を選びます。
-
-Secret、token、個人情報の値は成果物・レビュー・検証証跡に残しません。
+両 reviewer は実装者の自己検証を転載せず、同じ immutable head SHA を確認して verdict を記録します。PR head が変わった場合、その head への必要な再レビューが完了するまで merge しません。メイン agent だけが `$merge-reviewed-pr` を使って最終的な merge または保留を判断します。GitHub の `Approve` 操作はこの運用の必須条件ではありません。
 
 ## 成果物
 
-各 agent は、最終的に必要な完成版だけを次の規約で保存します。
-
 ```text
+docs/ai/output/cycle/NNN-<descriptive-kebab-case-name>.md
 docs/ai/output/<agent-name>/NNN-<descriptive-kebab-case-name>.md
 ```
 
-- agent ごとに `001` から連番にし、既存ファイルを上書きしない。
-- タイトル、作成日、agent 名、対象範囲を先頭に置く。
-- 見出し、本文、メタデータは日本語で記述する。
+- メイン agent は cycle record を `cycle/` に、custom agent は自身の `name` のディレクトリに保存する。
+- 保存先ごとに `001` から連番にし、既存ファイルを上書きしない。
+- タイトル、作成日、実施者または agent 名、対象範囲を先頭に置き、見出し・本文・メタデータは日本語で記述する。
 - 生のコマンド出力、一時ログ、Secret、token、個人情報は保存しない。
 
 Agent 定義を追加・変更した後は、新しい Codex session で project-scoped configuration を読み込む。
