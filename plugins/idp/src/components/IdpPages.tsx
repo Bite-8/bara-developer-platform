@@ -593,7 +593,9 @@ const findPlanPreviewTemplate = (
   templates: IdpTemplate[],
   context?: IdpProjectControlContext,
 ) => {
-  const enabledTemplates = templates.filter(template => template.enabled);
+  const enabledTemplates = templates.filter(
+    template => template.enabled && template.status === 'available',
+  );
   const contextTemplate = context?.templateRefs
     .map(ref =>
       enabledTemplates.find(template => templateControlRef(template) === ref),
@@ -1351,11 +1353,43 @@ export const EnvironmentListPage = ({
 export const EnvironmentDetailPage = ({
   projects,
   environments,
+  templates,
   operationLogs,
 }: IdpDataProps) => {
+  const classes = useStyles();
   const { environmentId } = useParams();
   const e = environments.find(x => x.id === environmentId);
   if (!e) return <EmptyState title="Environment not found" />;
+  const project = projects.find(p => p.id === e.projectId);
+  const planPreviewTemplate = project
+    ? findPlanPreviewTemplate(project, templates)
+    : undefined;
+  const planPreviewAction =
+    project && planPreviewTemplate ? (
+      <Button
+        component={Link}
+        to={planPreviewPath({
+          project,
+          template: planPreviewTemplate,
+          environment: e,
+        })}
+        variant="contained"
+        color="primary"
+        startIcon={<RocketLaunchIcon />}
+      >
+        Create plan preview
+      </Button>
+    ) : (
+      <Button
+        component={Link}
+        to="/idp/templates"
+        variant="contained"
+        color="primary"
+        startIcon={<RocketLaunchIcon />}
+      >
+        Open Templates
+      </Button>
+    );
   return (
     <IdpChrome>
       <Header title={e.name} subtitle="Operational environment detail" />
@@ -1384,6 +1418,31 @@ export const EnvironmentDetailPage = ({
               subtitle={e.endpointUrl ?? 'endpoint pending'}
               icon={<HistoryIcon />}
             />
+          </Grid>
+          <Grid item xs={12}>
+            <SectionCard title="Plan preview" action={planPreviewAction}>
+              <Typography>
+                Start a side-effect-free Plan preview from this Environment
+                context.
+              </Typography>
+              <Typography className={classes.muted}>
+                {project && planPreviewTemplate
+                  ? `Preview target: ${planPreviewTemplate.name} for ${project.name} / ${e.name}.`
+                  : 'Choose from available Templates before creating a Plan preview.'}
+              </Typography>
+              <Box mt={1} className={classes.metaGrid}>
+                <Chip
+                  size="small"
+                  className={classes.chip}
+                  label="No execute UI"
+                />
+                <Chip
+                  size="small"
+                  className={classes.chip}
+                  label="No external side effects"
+                />
+              </Box>
+            </SectionCard>
           </Grid>
           <Grid item xs={12} md={6}>
             <SectionCard title="Project">
