@@ -14,7 +14,22 @@
  * limitations under the License.
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
+
+const enterApp = async (page: Page) => {
+  await page.goto('/');
+
+  const enterButton = page.getByRole('button', { name: 'Enter' });
+  await expect(enterButton).toBeVisible();
+  await enterButton.click();
+
+  await expect(
+    page.getByRole('navigation').getByRole('link', {
+      name: 'Catalog',
+      exact: true,
+    }),
+  ).toBeVisible();
+};
 
 test('App should render the welcome page', async ({ page }) => {
   await page.goto('/');
@@ -32,21 +47,10 @@ test('App should render the welcome page', async ({ page }) => {
   ).toBeVisible();
 });
 
-test('IDP Project detail should show recommended action before backend control context', async ({
+test('IDP Project detail should show recommended action before backend control context and record a dry-run', async ({
   page,
 }) => {
-  await page.goto('/');
-
-  const enterButton = page.getByRole('button', { name: 'Enter' });
-  await expect(enterButton).toBeVisible();
-  await enterButton.click();
-
-  await expect(
-    page.getByRole('navigation').getByRole('link', {
-      name: 'Catalog',
-      exact: true,
-    }),
-  ).toBeVisible();
+  await enterApp(page);
   await page.goto('/idp/projects/examples');
 
   const recommendedHeading = page.getByRole('heading', {
@@ -90,4 +94,63 @@ test('IDP Project detail should show recommended action before backend control c
   ).toBeVisible();
   await expect(page.getByText('Policy:', { exact: false })).toBeVisible();
   await expect(page.getByText('Risk:', { exact: false })).toBeVisible();
+
+  await expect(
+    page.getByRole('heading', { name: 'Record-only dry-run' }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      /does not start a Scaffolder task, create a Git pull request, or start external execution/,
+    ),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Run dry-run' }).click();
+  await expect(
+    page.getByText(/ActionRun ref: action-run:dry-run-/),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/OperationLog ref:\s*operation-log:dry-run-/),
+  ).toBeVisible();
+  await expect(page.getByText('Scaffolder task started: false')).toBeVisible();
+  await expect(page.getByText('Git pull request created: false')).toBeVisible();
+  await expect(
+    page.getByText('External execution started: false'),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      'Record-only dry-run completed; no Scaffolder task, Git PR, or external execution was started.',
+      { exact: true },
+    ),
+  ).toBeVisible();
+
+  await page
+    .getByRole('button', { name: 'Open Project control context' })
+    .click();
+  await expect(page).toHaveURL(/\/idp\/projects\/examples$/);
+  await expect(
+    page.getByRole('heading', { name: 'Backend control context' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: /action-run:dry-run-/ }),
+  ).toBeVisible();
+  await expect(
+    page.getByText('dry-run · dry-run-succeeded', { exact: true }),
+  ).toBeVisible();
+});
+
+test('IDP Environment detail should preserve Plan preview project and environment context', async ({
+  page,
+}) => {
+  await enterApp(page);
+  await page.goto('/idp/environments/examples-dev');
+
+  await expect(
+    page.getByRole('heading', { name: 'examples-dev' }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Create plan preview' }).click();
+  await expect(page).toHaveURL(
+    /\/idp\/templates\/node-api\/run\?projectId=examples&environmentId=examples-dev/,
+  );
+  await expect(page.getByText('Step: input')).toBeVisible();
+  await expect(page.getByText('Examples', { exact: true })).toBeVisible();
+  await expect(page.getByText('examples-dev', { exact: true })).toBeVisible();
 });
