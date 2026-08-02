@@ -225,6 +225,43 @@ export type IdpTemplatePlanPreview = {
   operationLog: IdpControlOperationLog;
 };
 
+export type IdpDryRunActionRunInput = {
+  projectRef: string;
+  planRef: string;
+  idempotencyKey: string;
+};
+
+export type IdpActionRunSummary = {
+  id: string;
+  kind: 'ActionRun';
+  actionRunRef: string;
+  planRef?: string;
+  actor: {
+    entityRef: string;
+    type: 'user' | 'group' | 'service' | 'agent';
+  };
+  targetEntityRef: string;
+  eventType: 'dry-run.completed' | 'execution.started' | 'execution.completed';
+  createdAt: string;
+  status: IdpRuntimeStatus;
+  mode: 'dry-run' | 'execute';
+  externalExecutionRef?: string;
+  resultSummary?: string;
+  riskSummary?: IdpRiskSummary;
+  policyDecision?: IdpPolicyDecision;
+};
+
+export type IdpDryRunActionRun = {
+  actionRun: IdpActionRunSummary;
+  operationLog: IdpControlOperationLog;
+  sideEffectBoundary: {
+    scaffolderTaskStarted: false;
+    gitPullRequestCreated: false;
+    externalExecutionStarted: false;
+    message: string;
+  };
+};
+
 export type IdpEnvironmentControlContext = {
   entityRef: string;
   ownerRefs: string[];

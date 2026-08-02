@@ -114,6 +114,12 @@ class LocalIdpApi implements IdpApi {
     );
   }
 
+  async createDryRunActionRun() {
+    throw new Error(
+      'Dry-run ActionRun must be created by the backend IDP plugin.',
+    );
+  }
+
   async getProjectControlContext(projectRef: string) {
     const now = new Date().toISOString();
     return {

@@ -1,4 +1,6 @@
 import {
+  IdpDryRunActionRun,
+  IdpDryRunActionRunInput,
   IdpEnvironment,
   IdpOperationLog,
   IdpProject,
@@ -17,7 +19,12 @@ const unsupported = <T>(message: string): Promise<T> =>
 
 export class BackendIdpApi
   implements
-    Pick<IdpApi, 'getProjectControlContext' | 'createTemplatePlanPreview'>
+    Pick<
+      IdpApi,
+      | 'getProjectControlContext'
+      | 'createTemplatePlanPreview'
+      | 'createDryRunActionRun'
+    >
 {
   constructor(
     private readonly options: {
@@ -59,6 +66,27 @@ export class BackendIdpApi
     if (!response.ok) {
       throw new Error(
         `IDP backend Plan preview request failed: ${response.status}`,
+      );
+    }
+
+    return response.json();
+  }
+
+  async createDryRunActionRun(
+    input: IdpDryRunActionRunInput,
+  ): Promise<IdpDryRunActionRun> {
+    const response = await (this.options.fetchApi ?? fetch)(
+      `${this.options.baseUrl}/action-runs/dry-run`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(input),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `IDP backend dry-run ActionRun request failed: ${response.status}`,
       );
     }
 
