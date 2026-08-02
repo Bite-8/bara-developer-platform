@@ -1,8 +1,10 @@
 import { renderInTestApp } from '@backstage/test-utils';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { Route, Routes } from 'react-router-dom';
+import { Entity } from '@backstage/catalog-model';
 
 import {
+  CatalogProjectContextListContent,
   EnvironmentDetailPage,
   IdpDashboardPage,
   ProjectDetailContent,
@@ -218,8 +220,31 @@ const dryRunActionRun = () => ({
   },
 });
 
+const catalogSystem = (overrides: Partial<Entity> = {}): Entity => ({
+  ...overrides,
+  apiVersion: 'backstage.io/v1alpha1',
+  kind: 'System',
+  metadata: {
+    namespace: 'default',
+    name: 'examples',
+    title: 'Examples Catalog Project',
+    description: 'Catalog-backed examples Project',
+    ...overrides.metadata,
+  },
+  spec: {
+    owner: 'group:default/guests',
+    ...overrides.spec,
+  },
+});
+
+const catalogApiWith = (itemsPromise: Promise<{ items: Entity[] }>) => ({
+  getEntities: jest.fn().mockReturnValue(itemsPromise),
+});
+
 describe('IdpDashboardPage', () => {
   it('labels the portfolio as fixtures and links to authoritative Project context', async () => {
+    const catalogApi = catalogApiWith(Promise.resolve({ items: [] }));
+
     await renderInTestApp(
       <IdpDashboardPage
         projects={[project]}
@@ -228,10 +253,17 @@ describe('IdpDashboardPage', () => {
         operationLogs={[]}
         executions={[]}
         refresh={jest.fn()}
+        catalogApi={catalogApi}
       />,
     );
 
+    await waitFor(() => {
+      expect(catalogApi.getEntities).toHaveBeenCalledWith({
+        filter: { kind: 'System' },
+      });
+    });
     expect(screen.getByText('Data boundary')).toBeTruthy();
+    expect(screen.getByText('Catalog-backed Project context')).toBeTruthy();
     expect(screen.getByText('Fixture portfolio')).toBeTruthy();
     expect(screen.getByText('Fixture environment highlights')).toBeTruthy();
     expect(screen.getByText('Fixture creation templates')).toBeTruthy();
@@ -246,6 +278,138 @@ describe('IdpDashboardPage', () => {
     ).toBe('/idp/projects/examples');
     expect(screen.queryByText('Connected')).toBeNull();
     expect(screen.queryByText('webhooks ready')).toBeNull();
+  });
+
+  it('shows Catalog-backed Project context and opens a matching local control-context route', async () => {
+    const catalogApi = catalogApiWith(
+      Promise.resolve({ items: [catalogSystem()] }),
+    );
+
+    await renderInTestApp(
+      <IdpDashboardPage
+        projects={[project]}
+        environments={[environment]}
+        templates={[template]}
+        operationLogs={[]}
+        executions={[]}
+        refresh={jest.fn()}
+        catalogApi={catalogApi}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Examples Catalog Project')).toBeTruthy();
+    });
+
+    expect(
+      screen.getByText(
+        /Source: Backstage Catalog `System` entities visible to the current identity/,
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText('system:default/examples')).toBeTruthy();
+    expect(screen.getAllByText('group:default/guests').length).toBeGreaterThan(
+      0,
+    );
+    expect(
+      screen
+        .getByRole('button', { name: 'Open Project control context' })
+        .getAttribute('href'),
+    ).toBe('/idp/projects/examples');
+  });
+
+  it('sends an unmatched Catalog Project to its canonical Catalog entity route', async () => {
+    const catalogApi = catalogApiWith(
+      Promise.resolve({
+        items: [
+          catalogSystem({
+            metadata: {
+              namespace: 'default',
+              name: 'payments',
+              title: 'Payments',
+            },
+            spec: { owner: 'group:default/platform' },
+          }),
+        ],
+      }),
+    );
+
+    await renderInTestApp(
+      <CatalogProjectContextListContent
+        projects={[project]}
+        catalogApi={catalogApi}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Payments')).toBeTruthy();
+    });
+    expect(
+      screen
+        .getByRole('button', { name: 'Open Catalog entity' })
+        .getAttribute('href'),
+    ).toBe('/catalog/default/system/payments');
+  });
+
+  it('shows a safe loading state before Catalog Projects resolve', async () => {
+    const catalogApi = catalogApiWith(new Promise(() => {}));
+
+    await renderInTestApp(
+      <CatalogProjectContextListContent
+        projects={[project]}
+        catalogApi={catalogApi}
+      />,
+    );
+
+    expect(screen.getByText('Loading Catalog Projects...')).toBeTruthy();
+    expect(
+      screen.getByText(
+        /Reading Catalog entries with the existing Backstage frontend API/,
+      ),
+    ).toBeTruthy();
+  });
+
+  it('shows safe empty and error recovery without treating fixtures as Catalog data', async () => {
+    const catalogApi = catalogApiWith(Promise.resolve({ items: [] }));
+
+    await renderInTestApp(
+      <CatalogProjectContextListContent
+        projects={[project]}
+        catalogApi={catalogApi}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('No Catalog Project entries are visible.'),
+      ).toBeTruthy();
+    });
+    expect(
+      screen.getByText(/fixture overview remains a safe local example/),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Open Catalog' })).toBeTruthy();
+
+    const failingCatalogApi = catalogApiWith(
+      Promise.reject(new Error('catalog unavailable')),
+    );
+    await renderInTestApp(
+      <CatalogProjectContextListContent
+        projects={[project]}
+        catalogApi={failingCatalogApi}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Catalog Project context could not be loaded.'),
+      ).toBeTruthy();
+    });
+    expect(screen.getByText('catalog unavailable')).toBeTruthy();
+    expect(
+      screen.getByText(/Keep using the fixture overview for exploration only/),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Retry Catalog read' }),
+    ).toBeTruthy();
   });
 });
 

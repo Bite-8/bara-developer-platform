@@ -50,9 +50,31 @@ test('App should open Bara control-plane entry after guest entry', async ({
     page.getByText(/not live Catalog, GitHub, or runtime status/),
   ).toBeVisible();
   await expect(
+    page.getByRole('heading', {
+      name: 'Catalog-backed Project context',
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      /Source: Backstage Catalog `System` entities visible to the current identity/,
+    ),
+  ).toBeVisible();
+  await expect(page.getByText('system:default/examples')).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Open Project control context' }),
+  ).toHaveAttribute('href', '/idp/projects/examples');
+  await expect(
     page.getByRole('button', { name: 'Open Project context' }),
   ).toHaveAttribute('href', '/idp/projects/examples');
   await expect(page.getByText('Connected', { exact: true })).toHaveCount(0);
+  await page
+    .getByRole('button', { name: 'Open Project control context' })
+    .click();
+  await expect(page).toHaveURL(/\/idp\/projects\/examples$/);
+  await expect(
+    page.getByRole('heading', { name: 'Backend control context' }),
+  ).toBeVisible();
   await expect(
     nav.getByRole('link', { name: 'Catalog', exact: true }),
   ).toBeVisible();

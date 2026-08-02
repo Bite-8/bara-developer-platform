@@ -5533,10 +5533,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@internal/plugin-idp@workspace:plugins/idp"
   dependencies:
+    "@backstage/catalog-model": "npm:^1.8.0"
     "@backstage/cli": "npm:^0.36.2"
     "@backstage/core-components": "npm:^0.18.10"
     "@backstage/core-plugin-api": "npm:^1.12.6"
     "@backstage/frontend-plugin-api": "npm:^0.17.0"
+    "@backstage/plugin-catalog-react": "npm:^3.0.0"
     "@backstage/test-utils": "npm:^1.7.18"
     "@material-ui/core": "npm:^4.12.2"
     "@material-ui/icons": "npm:^4.9.1"
