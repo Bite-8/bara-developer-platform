@@ -4,6 +4,7 @@ import { Route, Routes } from 'react-router-dom';
 
 import {
   EnvironmentDetailPage,
+  IdpDashboardPage,
   ProjectDetailContent,
   TemplateRunContent,
 } from './IdpPages';
@@ -215,6 +216,37 @@ const dryRunActionRun = () => ({
     message:
       'Record-only dry-run completed; no Scaffolder task, Git PR, or external execution was started.',
   },
+});
+
+describe('IdpDashboardPage', () => {
+  it('labels the portfolio as fixtures and links to authoritative Project context', async () => {
+    await renderInTestApp(
+      <IdpDashboardPage
+        projects={[project]}
+        environments={[environment]}
+        templates={[template]}
+        operationLogs={[]}
+        executions={[]}
+        refresh={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Data boundary')).toBeTruthy();
+    expect(screen.getByText('Fixture portfolio')).toBeTruthy();
+    expect(screen.getByText('Fixture environment highlights')).toBeTruthy();
+    expect(screen.getByText('Fixture creation templates')).toBeTruthy();
+    expect(screen.getByText('Fixture recent operations')).toBeTruthy();
+    expect(
+      screen.getByText(/not live Catalog, GitHub, or runtime status/),
+    ).toBeTruthy();
+    expect(
+      screen
+        .getByRole('button', { name: 'Open Project context' })
+        .getAttribute('href'),
+    ).toBe('/idp/projects/examples');
+    expect(screen.queryByText('Connected')).toBeNull();
+    expect(screen.queryByText('webhooks ready')).toBeNull();
+  });
 });
 
 const renderProjectDetail = async ({

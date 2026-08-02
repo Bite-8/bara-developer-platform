@@ -29,7 +29,6 @@ import AddCircleOutlineIcon from '@material-ui/icons/AddCircleOutline';
 import AppsIcon from '@material-ui/icons/Apps';
 import CloudDoneIcon from '@material-ui/icons/CloudDone';
 import CloudQueueIcon from '@material-ui/icons/CloudQueue';
-import GitHubIcon from '@material-ui/icons/GitHub';
 import HistoryIcon from '@material-ui/icons/History';
 import LayersIcon from '@material-ui/icons/Layers';
 import RocketLaunchIcon from '@material-ui/icons/FlightTakeoff';
@@ -1032,10 +1031,6 @@ export const IdpDashboardPage = ({
 }: IdpDataProps) => {
   const classes = useStyles();
   const availableTemplates = templates.filter(t => t.status === 'available');
-  const repos = projects.reduce(
-    (count, project) => count + project.repositories.length,
-    0,
-  );
   return (
     <IdpChrome>
       <Header
@@ -1045,7 +1040,7 @@ export const IdpDashboardPage = ({
       <Content>
         <Hero
           title="IDP Dashboard"
-          subtitle="Catalog への入口だけではなく、プロジェクト・環境・作成テンプレート・GitHub 連携の状態を見ながら作成操作へ進める画面です。"
+          subtitle="安全な fixture overview から始め、Catalog / Git desired state と runtime context を確認して次の action へ進む画面です。"
         >
           <Button
             component={Link}
@@ -1069,7 +1064,7 @@ export const IdpDashboardPage = ({
             <SummaryCard
               title="Projects"
               value={projects.length}
-              subtitle="IDP owned operating units"
+              subtitle="safe local fixture portfolio"
               icon={<AppsIcon />}
             />
           </Grid>
@@ -1077,7 +1072,7 @@ export const IdpDashboardPage = ({
             <SummaryCard
               title="Environments"
               value={environments.length}
-              subtitle="dev / stg / prod state"
+              subtitle="safe local fixture states"
               icon={<CloudDoneIcon />}
             />
           </Grid>
@@ -1085,13 +1080,13 @@ export const IdpDashboardPage = ({
             <SummaryCard
               title="Templates"
               value={availableTemplates.length}
-              subtitle="available creation flows"
+              subtitle="safe local fixture templates"
               icon={<LayersIcon />}
             />
           </Grid>
           <Grid item xs={12} md={8}>
             <SectionCard
-              title="Project portfolio"
+              title="Fixture portfolio"
               action={
                 <Button component={Link} to="/idp/projects">
                   View all
@@ -1113,26 +1108,46 @@ export const IdpDashboardPage = ({
             </SectionCard>
           </Grid>
           <Grid item xs={12} md={4}>
-            <SectionCard title="GitHub integration">
+            <SectionCard
+              title="Data boundary"
+              action={
+                <Button component={Link} to="/idp/projects/examples">
+                  Open Project context
+                </Button>
+              }
+            >
               <Box className={classes.iconBubble}>
-                <GitHubIcon />
+                <HistoryIcon />
               </Box>
               <Typography variant="h5" style={{ marginTop: 16 }}>
-                Connected
+                Explore safely, then read current context
               </Typography>
               <Typography className={classes.muted}>
-                {repos} repositories tracked from mock data. Last sync:
-                2026-06-13 09:30 UTC.
+                Portfolio, environment, template, and recent-operation cards on
+                this entry are safe local fixtures for exploring Bara. They are
+                not live Catalog, GitHub, or runtime status.
               </Typography>
               <Box mt={2} className={classes.metaGrid}>
-                <StatusChip status="repository read" />
-                <StatusChip status="webhooks ready" />
+                <Chip
+                  size="small"
+                  className={classes.chip}
+                  label="Fixture overview"
+                />
+                <Chip
+                  size="small"
+                  className={classes.chip}
+                  label="No live integration claim"
+                />
               </Box>
+              <Typography className={classes.muted} style={{ marginTop: 16 }}>
+                Open a Project control context to read Catalog / Git desired
+                state and IDP runtime records before taking the next action.
+              </Typography>
             </SectionCard>
           </Grid>
           <Grid item xs={12} md={4}>
             <SectionCard
-              title="Environment highlights"
+              title="Fixture environment highlights"
               action={
                 <Button component={Link} to="/idp/environments">
                   View all
@@ -1154,7 +1169,7 @@ export const IdpDashboardPage = ({
           </Grid>
           <Grid item xs={12} md={4}>
             <SectionCard
-              title="Creation templates"
+              title="Fixture creation templates"
               action={
                 <Button component={Link} to="/idp/templates">
                   Open
@@ -1169,7 +1184,7 @@ export const IdpDashboardPage = ({
             </SectionCard>
           </Grid>
           <Grid item xs={12} md={4}>
-            <SectionCard title="Recent operations">
+            <SectionCard title="Fixture recent operations">
               <OperationLogList operationLogs={operationLogs} />
             </SectionCard>
           </Grid>
