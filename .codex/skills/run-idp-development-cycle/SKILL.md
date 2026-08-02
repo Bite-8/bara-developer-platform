@@ -40,7 +40,7 @@ resume-first は既存 wave を新規 discovery より優先する規則であ�
 - delivery unit は 1 Issue、原則 1 PR、独立した受入条件、validation、fixed-SHA review、merge / hold 判断を持つ。
 - dependency graph 上で依存が解け、所有ファイルまたは worktree を分離できる ready unit は、利用可能な subagent 枠で原則並行実施する。枠が空いたら次の ready unit を補充する。依存する unit だけを predecessor の merge 後に順次実施する。
 - 一つの unit の hold / failure は、その unit と downstream dependency を止めるが、依存しない unit の review / merge を妨げない。
-- 各 PR の実装完了を全 unit で待ち合わせない。PR ごとに Quality / Product review と merge 評価を開始し、他の ready unit の実装・review と並行して進める。ここでいう独立 gate は全体を直列化する関所ではなく、各 PR の failure を局所化する境界である。
+- 各 PR の実装完了を全 unit で待ち合わせない。PR ごとに Quality review と merge 評価を開始し、他の ready unit の実装・review と並行して進める。Product review は必要に応じた助言であり、通常の UI / UX・新機能の gate にはしない。ここでいう独立 gate は全体を直列化する関所ではなく、品質・安全上の failure を局所化する境界である。
 - decision-ready だが今回選外の候補は GitHub backlog に残し、選外理由、優先順位、依存関係を記録する。
 
 wave は無制限に広げない。利用者価値が一文で説明でき、unit 間の依存関係と終了条件が明確で、各 unit を個別に検証・merge できる最小の成果群を選ぶ。0 件も有効な結果である。選ぶべき unit がない場合、または根拠が不足して実装が危険な場合は、作成・更新した Issue、根拠、次に必要な観測条件、実装しなかった理由を記録する。
@@ -48,20 +48,20 @@ wave は無制限に広げない。利用者価値が一文で説明でき、uni
 ## サイクルを進める
 
 1. resume-first の確認で再開対象を決める。再開対象があれば新規探索を省略し、関連 Issue / PR の不足を埋める。
-2. 新規候補が必要な場合だけ `$discover-idp-opportunities` をメイン agent が実行し、実行中の製品、リポジトリ、backlog、直近のレビュー、必要な公開情報から read-only の候補レポートを作る。解法に意味のある不確実性がある場合は、異なる journey / source / analysis lens を持つ `product-explorer` を利用可能な枠で並行起動し、独立調査を発散させる。メイン agent が 2〜4 案、trade-off、暫定推奨へ統合する。discovery は Issue を作成・更新しない。
+2. 新規候補が必要な場合だけ `$discover-idp-opportunities` をメイン agent が実行し、実行中の製品、リポジトリ、backlog、直近のレビュー、必要な公開情報から read-only の候補レポートを作る。可逆な UI / UX、画面露出、安全な新機能は、唯一解を探索するための discovery を必須にせず、そのまま delivery candidate にできる。`product-explorer` による独立調査は、architecture、外部 integration、永続化、permission、外部副作用、または戻しにくい判断で結果が実装方針を変え得る場合だけ使う。discovery は Issue を作成・更新しない。
 3. `$select-product-outcome` をメイン agent が実行し、initiative、decision-ready backlog、今回扱う 0 件以上の coherent delivery wave、各 unit の受入条件、依存関係、非対象、リスク、成果仮説、終了条件を決定する。selection だけが GitHub Issue の作成・更新を行う。decision-ready な選外候補も Issue に残す。
 4. delivery unit ごとに実施形態を決める。小さな docs / configuration / 調査の変更はメイン agent が直接行ってよい。実装、テスト、複数ファイルの変更、または独立した実装コンテキストが有益なものは unit ごとに `implementer` に委譲する。ready unit は ownership または worktree を分け、利用可能な subagent 枠まで同時に起動する。メイン agent も競合しない unit または統合を進め、枠が空いたら次の ready unit を補充する。依存 unit は predecessor の merge 後に順次実装する。
 5. 変更がある delivery unit は、実施担当が focused validation、意図的な commit、push、通常の GitHub Pull Request 作成を行う。PR body には変更内容、影響、検証、残余リスク、受入条件ごとの Review guide、関連 Issue、immutable head commit SHA を残す。実装者の self-review は独立レビューではなく、approve / merge をしない。
-6. 各 PR は他 unit の実装完了を待たず、head を固定できた時点で `quality-reviewer` を実行する。利用者の挙動、UI / UX、API contract、agent workflow、または成果仮説を変える PR では、同じ head に対して `product-reviewer` も並行して実行する。複数 PR の reviewer wave も利用可能な枠で並行する。docs / internal configuration のみで利用者・runtime・agent の挙動を変えない場合は product review を省略できるが、理由を Issue または PR comment に残す。
-7. reviewer は `PASS` / `FAIL` / `UNVERIFIED` の verdict と、AC ごとの `PASS` / `FAIL` / `UNVERIFIED` を reviewed SHA 付きで返す。`FAIL`、重要な `UNVERIFIED`、blocking finding、または head mismatch があれば、メイン agent は修正・再検証・PR head 更新を依頼または実施し、新しい head に対して必要な reviewer を再実行する。過去の head に対する `PASS` を新しい head に流用しない。
-8. 全ての必要な review が同一の current head SHA を `PASS` とし、必須 CI が成功し、PR が merge 可能で、未解決の blocking finding がない場合だけ、メイン agent は `$merge-reviewed-pr` で merge を実行または merge queue に入れる。条件を満たさない場合は merge せず、次の作業を Issue または PR comment に記録する。
+6. 各 PR は他 unit の実装完了を待たず、head を固定できた時点で `quality-reviewer` を実行する。Product Reviewer は、main agent が利用者体験について独立した助言を必要と判断した場合だけ並行して実行する。UI / UX と新機能の採否は Product Reviewer の事前承認を待たず、可逆な実装を先に出して学ぶ。
+7. Quality Reviewer は `PASS` / `FAIL` / `UNVERIFIED` の verdict と、AC ごとの `PASS` / `FAIL` / `UNVERIFIED` を reviewed SHA 付きで返す。`FAIL`、重要な `UNVERIFIED`、blocking finding、または head mismatch があれば、メイン agent は修正・再検証・PR head 更新を依頼または実施し、新しい head に対して Quality review を再実行する。Product Reviewer の助言は、security / correctness finding を除き、後続 iteration の入力であって merge veto ではない。
+8. Quality review が同一の current head SHA を `PASS` とし、必須 CI が成功し、PR が merge 可能で、未解決の blocking finding がない場合だけ、メイン agent は `$merge-reviewed-pr` で merge を実行または merge queue に入れる。条件を満たさない場合は merge せず、次の作業を Issue または PR comment に記録する。
 9. unit が merge または明示的 hold に収束したら dependency graph を更新する。ready になった次の unit があれば同じ開発依頼の中で手順 4 へ戻る。1 PR の作成・merge だけをサイクル終了条件にしない。
 
 ## subagent の委譲と監視
 
 メイン agent は orchestration context を抱え、subagent には unit を完了するための最小契約だけを渡す。委譲 prompt には、Issue / AC、exact task、読む入力、所有ファイルまたは worktree、期待する artifact、validation、停止条件を含める。initiative 全体の優先順位付け、他 unit の merge 判断、下流の orchestration を subagent に推測させない。
 
-write-heavy な並行 unit は同じ working tree で実施せず、worktree または明確に分離された所有ファイルを使う。探索、test、review、log 分析など read-heavy な作業は、context pollution を避けるため積極的に subagent へ分ける。同じ prompt の agent 数を増やすより、implementer、Quality Reviewer、Product Reviewer のように異なる観測目的を持たせる。
+write-heavy な並行 unit は同じ working tree で実施せず、worktree または明確に分離された所有ファイルを使う。subagent は、独立した実装、品質確認、または結果が方針を変え得る調査にだけ使う。見た目、情報設計、interaction、可逆な新機能の一案を試すために、形式的な discovery や複数 agent を起動しない。
 
 各委譲について、unit または research lens、role、branch / worktree、所有範囲または source scope、初期 prompt で sibling 結論を除外したか、期待 artifact、開始状態、最終 status、停止理由の receipt をメイン agent が追跡する。一定時間、tool activity、編集、status 応答のいずれも観測できない場合は status を要求し、応答しなければ interrupt して再委譲またはメイン agent が引き継ぐ。沈黙を成功または failure と推測しない。
 

@@ -21,9 +21,9 @@ Bara Developer Platform にとって検証価値のある UI / UX、AI-assisted 
 - control-plane object: Project、Environment、Template、Intent、Plan、ActionRun、OperationLog のいずれかで current state、allowed action、owner が分からない箇所。
 - Backstage ecosystem: Catalog、Scaffolder、Permission、Search、TechDocs、公式 plugin の未活用または拡張で解くべき差分。
 - AI-assisted journey: 選択中の Project / Environment context、evidence、risk、approval、Plan、execution、audit が一続きになっているか。汎用 chat の有無ではなく、利用者が安全に次の行動へ進めるか。
-- Delivery / operability: owner が変更を preview で受け入れられるか。本番候補に rollout、rollback、永続化、認証、権限、監視、backup / restore の明白な欠落がないか。
+- Delivery / operability: 確認 route と revert 方法があるか。本番候補に rollout、rollback、永続化、認証、権限、監視、backup / restore の明白な欠落がないか。
 
-Backstage 標準 UI は一貫性、accessibility、OSS plugin 互換性の baseline であり、Bara の最適 UX であるとは仮定しない。`docs/product/ai-native-ux-principles.md` に従い、代表 journey の current baseline と変更仮説を比較する。見た目の好みだけで全面 redesign を候補化せず、task success、time to next action、迷い・backtrack、risk / approval 理解、error recovery のどれを改善するかを明示する。
+Backstage 標準 UI は一貫性、accessibility、OSS plugin 互換性の baseline であり、Bara の最適 UX であるとは仮定しない。視覚的魅力、洗練、信頼感、Bara らしさ、楽しさ、または新機能の可能性だけでも可逆な候補にできる。これらの正解を発見するための baseline、定量仮説、複数案比較を要求しない。approval / permission / execute の意味、永続化、外部副作用、または戻しにくい構造を変える候補だけは、代表 journey と関連する安全境界を調べる。
 
 UX と運用負荷が衝突するときは、IDP 利用者がより確実に価値を得る UX を優先する。運用改善だけを候補にするときも、その改善が利用者価値、安全性、または継続的な提供能力へどう接続するかを明示する。
 
@@ -31,7 +31,7 @@ UX と運用負荷が衝突するときは、IDP 利用者がより確実に価�
 
 ### 独立した調査を発散させる
 
-意味のある UI / UX、機能、architecture、外部 integration の不確実性がある場合、メイン agent は `product-explorer` または最小コンテキストの subagent を複数起動する。各 subagent には同じ案を投票させず、異なる利用者 journey、evidence source、analysis method、実現性 lens を割り当てる。初期調査中は他 subagent の結論を渡さず、独立した観測を得る。
+`product-explorer` または最小コンテキストの subagent を複数起動するのは、architecture、外部 integration、永続化、permission、外部副作用、または戻しにくい構造の不確実性がある場合だけとする。visual design、情報設計、interaction、画面露出、可逆な新機能は、直接 delivery candidate として扱える。
 
 UI / UX の例では、必要な範囲から異なる lens を選ぶ。
 
@@ -44,7 +44,7 @@ UI / UX の例では、必要な範囲から異なる lens を選ぶ。
 
 外部サイトは表面的な見た目をコピーせず、対象利用者、task、interaction pattern、観測できる利点と不利点を記録する。各 subagent は事実、推論、好み、未確認事項を分け、URL、確認日、画面または interaction の観測範囲を返す。利用者調査を装うことや、traffic がないのに統計的結論を出すことはしない。
 
-軽微な bug、機械的な更新、既に受入条件で解法が決まっている変更は、複数案を作るコストが判断を変えないため、この発散を省略できる。省略理由を選定に残す。
+可逆な UI / feature は、複数案を作るコストが判断を変えないため、この発散を省略できる。省略理由を記録する必要はない。
 
 各調査委譲について、subagent、割り当てた lens / source / method、読む入力、sibling の結論を初期 prompt から除外したこと、完了 status を discovery 作業メモに receipt として残す。調査は、material な判断軸ごとに比較可能な証拠または明示的な unknown が揃い、次の調査が暫定推奨や検証 unit を変える見込みが低くなった時点で収束する。情報源数を増やすこと自体を終了条件にしない。
 
@@ -74,13 +74,13 @@ UI / UX の例では、必要な範囲から異なる lens を選ぶ。
 
 各候補を次のいずれかに分類する。
 
-- `delivery candidate`: 対象利用者と課題が具体的で、Bara の製品方針に適合する。最小の受入条件を提案できる。内部観測一件以上、または独立した外部証跡二件以上を目安にする。
+- `delivery candidate`: 対象利用者と課題が具体的で、Bara の製品方針に適合する。最小の受入条件を提案できる。可逆な UI / feature は、視覚的意図または試したい機能だけを根拠にこの候補としてよい。戻しにくい変更では内部観測一件以上、または独立した外部証跡二件以上を目安にする。
 - `discovery candidate`: 利用者価値は見込めるが、課題の有無、解法、責務境界、外部依存のいずれかに重要な不確実性が残る。調べる問いと、その結果により下す判断を定義する。
 - `defer`: 根拠、戦略適合性、観測方法が不足する。実装や Issue 化を勧めない。
 
 同じ課題を扱う既存 GitHub Issue がある場合は URL を記録し、重複候補として明示する。`delivery candidate` / `discovery candidate` と判定した新規候補でも、この skill では GitHub Issue を作成・更新しない。Issue 化を推奨する場合は、対象利用者、現物で観測した状況、課題仮説、外部根拠、期待成果、最小の UI / API / integration 案、観測方法、非対象、リスク、candidate 区分、推奨 label を後続の `$select-product-outcome` が転記できる形で残す。確認済みでない label は推測しない。
 
-独立調査を統合するとき、メイン agent は重複案をまとめ、意味のある候補を原則 2〜4 案に絞る。各案について、根拠、利用者価値、trade-off、Backstage 適合性、検証方法、可逆性を比較し、現時点の暫定推奨とその理由を示す。調査 subagent の多数決では決めず、根拠の質と成果仮説で判断する。有力な選外案と、追加証拠で判断が変わる条件も後続選定へ渡す。
+独立調査を統合するときだけ、メイン agent は重複案をまとめ、意味のある候補を比較する。調査 subagent の多数決では決めず、根拠の質と安全境界で判断する。可逆な UI / feature は単一案をそのまま後続選定へ渡せる。
 
 ## 候補レポートを作る
 

@@ -1,6 +1,6 @@
 interface:
   display_name: 'IDP 機会の発見'
-  short_description: '独立調査を発散し根拠付きの複数案を作る'
+  short_description: '戻しにくい判断を独立調査し、根拠付きの選択肢を作る'
   default_prompt: 'Use $discover-idp-opportunities to observe the product, delegate independent research lenses, and produce evidence-labelled options and opportunity candidates.'
 policy:
   allow_implicit_invocation: false

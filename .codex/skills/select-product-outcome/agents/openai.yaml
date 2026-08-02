@@ -1,6 +1,6 @@
 interface:
   display_name: '運営サイクルの成果群選定'
-  short_description: '複数案を比較しdelivery waveとbacklogを決定する'
+  short_description: '安全境界を保ちつつdelivery waveとbacklogを決定する'
   default_prompt: 'Use $select-product-outcome to compare evidence-backed options and issue a coherent delivery wave plus decision-ready backlog from the Project goal.'
 policy:
   allow_implicit_invocation: false
