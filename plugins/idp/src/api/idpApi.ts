@@ -1,4 +1,6 @@
 import {
+  IdpDryRunActionRun,
+  IdpDryRunActionRunInput,
   IdpEnvironment,
   IdpOperationLog,
   IdpProjectControlContext,
@@ -39,6 +41,9 @@ export type IdpApi = {
   createTemplatePlanPreview(
     input: IdpTemplatePlanPreviewInput,
   ): Promise<IdpTemplatePlanPreview>;
+  createDryRunActionRun(
+    input: IdpDryRunActionRunInput,
+  ): Promise<IdpDryRunActionRun>;
   getProjectControlContext(
     projectRef: string,
   ): Promise<IdpProjectControlContext>;

@@ -97,4 +97,84 @@ describe('BackendIdpApi', () => {
       },
     );
   });
+
+  it('creates a dry-run ActionRun with the backend API', async () => {
+    const dryRun = {
+      actionRun: {
+        id: 'dry-run-preview-node',
+        kind: 'ActionRun',
+        actionRunRef: 'action-run:dry-run-preview-node',
+        planRef: 'plan:preview-node',
+        actor: { entityRef: 'user:default/guest', type: 'user' },
+        targetEntityRef: 'system:default/examples',
+        eventType: 'dry-run.completed',
+        createdAt: '2026-08-01T00:00:01.000Z',
+        status: 'dry-run-succeeded',
+        mode: 'dry-run',
+        resultSummary:
+          'Record-only dry-run completed; no Scaffolder task, Git PR, or external execution was started.',
+      },
+      operationLog: {
+        id: 'log-dry-run-preview-node',
+        operationLogRef: 'operation-log:dry-run-preview-node',
+        actor: { entityRef: 'user:default/guest', type: 'user' },
+        targetEntityRef: 'system:default/examples',
+        eventType: 'dry-run.completed',
+        createdAt: '2026-08-01T00:00:01.000Z',
+        status: 'dry-run-succeeded',
+        message:
+          'Record-only dry-run completed; no Scaffolder task, Git PR, or external execution was started.',
+      },
+      sideEffectBoundary: {
+        scaffolderTaskStarted: false,
+        gitPullRequestCreated: false,
+        externalExecutionStarted: false,
+        message:
+          'Record-only dry-run completed; no Scaffolder task, Git PR, or external execution was started.',
+      },
+    };
+    const fetchApi = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => dryRun,
+    });
+    const api = new BackendIdpApi({
+      baseUrl: 'http://localhost:7007/api/idp',
+      fetchApi,
+    });
+    const input = {
+      projectRef: 'system:default/examples',
+      planRef: 'plan:preview-node',
+      idempotencyKey: 'dry-run-preview-node',
+    };
+
+    await expect(api.createDryRunActionRun(input)).resolves.toEqual(dryRun);
+    expect(fetchApi).toHaveBeenCalledWith(
+      'http://localhost:7007/api/idp/action-runs/dry-run',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(input),
+      },
+    );
+  });
+
+  it('rejects non-2xx dry-run responses', async () => {
+    const fetchApi = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 409,
+      json: async () => ({ error: 'duplicate dry-run' }),
+    });
+    const api = new BackendIdpApi({
+      baseUrl: 'http://localhost:7007/api/idp',
+      fetchApi,
+    });
+
+    await expect(
+      api.createDryRunActionRun({
+        projectRef: 'system:default/examples',
+        planRef: 'plan:preview-node',
+        idempotencyKey: 'dry-run-preview-node',
+      }),
+    ).rejects.toThrow('IDP backend dry-run ActionRun request failed: 409');
+  });
 });

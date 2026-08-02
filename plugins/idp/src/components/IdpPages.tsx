@@ -38,6 +38,7 @@ import { IdpApi } from '../api/idpApi';
 import { idpApi } from '../api/localIdpApi';
 import {
   IdpControlOperationLog,
+  IdpDryRunActionRun,
   IdpEnvironment,
   IdpOperationLog,
   IdpProjectControlContext,
@@ -489,7 +490,9 @@ export const EmptyState = ({ title }: { title: string }) => (
 
 type ControlContextApi = Pick<
   IdpApi,
-  'getProjectControlContext' | 'createTemplatePlanPreview'
+  | 'getProjectControlContext'
+  | 'createTemplatePlanPreview'
+  | 'createDryRunActionRun'
 >;
 
 const useBackendControlContextApi = (): ControlContextApi => {
@@ -511,6 +514,13 @@ const useBackendControlContextApi = (): ControlContextApi => {
           baseUrl,
           fetchApi: fetchApi.fetch,
         }).createTemplatePlanPreview(input);
+      },
+      createDryRunActionRun: async input => {
+        const baseUrl = await discoveryApi.getBaseUrl('idp');
+        return new BackendIdpApi({
+          baseUrl,
+          fetchApi: fetchApi.fetch,
+        }).createDryRunActionRun(input);
       },
     }),
     [discoveryApi, fetchApi],
@@ -1531,6 +1541,11 @@ export const TemplateRunContent = ({
     'idle' | 'creating' | 'error'
   >('idle');
   const [previewError, setPreviewError] = useState('');
+  const [dryRun, setDryRun] = useState<IdpDryRunActionRun>();
+  const [dryRunStatus, setDryRunStatus] = useState<
+    'idle' | 'creating' | 'error'
+  >('idle');
+  const [dryRunError, setDryRunError] = useState('');
   const filteredEnvironments = useMemo(() => {
     const project = projects.find(candidate => candidate.id === projectId);
     return project ? relatedProjectEnvironments(project, environments) : [];
@@ -1596,6 +1611,9 @@ export const TemplateRunContent = ({
         ].join(':'),
       });
       setPreview(nextPreview);
+      setDryRun(undefined);
+      setDryRunStatus('idle');
+      setDryRunError('');
       setStep('confirm');
     } catch (error) {
       setPreviewStatus('error');
@@ -1605,6 +1623,34 @@ export const TemplateRunContent = ({
       return;
     }
     setPreviewStatus('idle');
+  };
+  const createDryRun = async () => {
+    if (!selectedProjectRef || !preview) {
+      return;
+    }
+
+    setDryRunStatus('creating');
+    setDryRunError('');
+    try {
+      const nextDryRun = await controlContextApi.createDryRunActionRun({
+        projectRef: selectedProjectRef,
+        planRef: preview.plan.planRef,
+        idempotencyKey: [
+          selectedProjectRef,
+          preview.plan.planRef,
+          'dry-run',
+          Date.now(),
+        ].join(':'),
+      });
+      setDryRun(nextDryRun);
+    } catch (error) {
+      setDryRunStatus('error');
+      setDryRunError(
+        error instanceof Error ? error.message : 'Unknown IDP API error',
+      );
+      return;
+    }
+    setDryRunStatus('idle');
   };
   return (
     <IdpChrome>
@@ -1774,6 +1820,69 @@ export const TemplateRunContent = ({
                       runtime context with OperationLog{' '}
                       {preview.operationLog.operationLogRef}.
                     </Typography>
+                  </Box>
+                  <Box mt={2} className={classes.miniCard}>
+                    <Typography variant="h6">Record-only dry-run</Typography>
+                    <Typography className={classes.muted}>
+                      This records an ActionRun and OperationLog for review. It
+                      does not start a Scaffolder task, create a Git pull
+                      request, or start external execution.
+                    </Typography>
+                    <Box mt={2}>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        disabled={dryRunStatus === 'creating'}
+                        onClick={createDryRun}
+                      >
+                        {dryRunStatus === 'creating'
+                          ? 'Recording dry-run...'
+                          : 'Run dry-run'}
+                      </Button>
+                    </Box>
+                    {dryRunStatus === 'error' && (
+                      <Box mt={2}>
+                        <StatusChip status="error" />
+                        <Typography className={classes.muted}>
+                          {dryRunError}
+                        </Typography>
+                      </Box>
+                    )}
+                    {dryRun && (
+                      <Box mt={2}>
+                        <Typography>
+                          ActionRun ref: {dryRun.actionRun.actionRunRef}
+                        </Typography>
+                        <Typography>
+                          Result: {dryRun.actionRun.resultSummary}
+                        </Typography>
+                        <Typography>
+                          OperationLog ref:{' '}
+                          {dryRun.operationLog.operationLogRef}
+                        </Typography>
+                        <Typography>
+                          Scaffolder task started:{' '}
+                          {String(
+                            dryRun.sideEffectBoundary.scaffolderTaskStarted,
+                          )}
+                        </Typography>
+                        <Typography>
+                          Git pull request created:{' '}
+                          {String(
+                            dryRun.sideEffectBoundary.gitPullRequestCreated,
+                          )}
+                        </Typography>
+                        <Typography>
+                          External execution started:{' '}
+                          {String(
+                            dryRun.sideEffectBoundary.externalExecutionStarted,
+                          )}
+                        </Typography>
+                        <Typography className={classes.muted}>
+                          {dryRun.sideEffectBoundary.message}
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
                   <Box mt={2}>
                     <Typography variant="h6">Input parameters</Typography>

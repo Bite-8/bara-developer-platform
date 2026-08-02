@@ -140,6 +140,79 @@ const controlContext = (
   ...overrides,
 });
 
+const templatePreview = () => ({
+  plan: {
+    id: 'preview-node',
+    kind: 'Plan' as const,
+    planRef: 'plan:preview-node',
+    actor: { entityRef: 'user:default/guest', type: 'user' as const },
+    targetEntityRef: 'system:default/examples',
+    eventType: 'plan.created' as const,
+    createdAt: '2026-08-01T00:00:00.000Z',
+    status: 'planned' as const,
+    expectedChangeSummary:
+      'Preview node-api for examples in examples-dev without side effects.',
+    requiredApproval: 'none' as const,
+    policyDecision: {
+      result: 'allow' as const,
+      reasons: ['Plan preview is side-effect-free.'],
+    },
+    riskSummary: {
+      level: 'low' as const,
+      summary: 'Development dry-run only.',
+      factors: ['side-effect-free-preview'],
+    },
+  },
+  operationLog: {
+    id: 'log-preview-node',
+    operationLogRef: 'operation-log:preview-node',
+    actor: { entityRef: 'user:default/guest', type: 'user' as const },
+    targetEntityRef: 'system:default/examples',
+    eventType: 'plan.created' as const,
+    createdAt: '2026-08-01T00:00:00.000Z',
+    status: 'planned' as const,
+    message: 'Plan preview planned.',
+  },
+});
+
+const dryRunActionRun = () => ({
+  actionRun: {
+    id: 'dry-run-preview-node',
+    kind: 'ActionRun' as const,
+    actionRunRef: 'action-run:dry-run-preview-node',
+    planRef: 'plan:preview-node',
+    actor: { entityRef: 'user:default/guest', type: 'user' as const },
+    targetEntityRef: 'system:default/examples',
+    eventType: 'dry-run.completed' as const,
+    createdAt: '2026-08-01T00:00:01.000Z',
+    status: 'dry-run-succeeded' as const,
+    mode: 'dry-run' as const,
+    resultSummary:
+      'Record-only dry-run completed; no Scaffolder task, Git PR, or external execution was started.',
+  },
+  operationLog: {
+    id: 'log-dry-run-preview-node',
+    operationLogRef: 'operation-log:dry-run-preview-node',
+    actor: { entityRef: 'user:default/guest', type: 'user' as const },
+    targetEntityRef: 'system:default/examples',
+    eventType: 'dry-run.completed' as const,
+    createdAt: '2026-08-01T00:00:01.000Z',
+    status: 'dry-run-succeeded' as const,
+    message:
+      'Record-only dry-run completed; no Scaffolder task, Git PR, or external execution was started.',
+    projectRef: 'system:default/examples',
+    planRef: 'plan:preview-node',
+    actionRunRef: 'action-run:dry-run-preview-node',
+  },
+  sideEffectBoundary: {
+    scaffolderTaskStarted: false as const,
+    gitPullRequestCreated: false as const,
+    externalExecutionStarted: false as const,
+    message:
+      'Record-only dry-run completed; no Scaffolder task, Git PR, or external execution was started.',
+  },
+});
+
 const renderProjectDetail = async ({
   contextPromise = Promise.resolve(controlContext()),
 }: {
@@ -148,6 +221,7 @@ const renderProjectDetail = async ({
   const controlContextApi = {
     getProjectControlContext: jest.fn().mockReturnValue(contextPromise),
     createTemplatePlanPreview: jest.fn(),
+    createDryRunActionRun: jest.fn(),
   };
 
   await renderInTestApp(
@@ -379,6 +453,7 @@ describe('TemplateRunContent', () => {
     const controlContextApi = {
       getProjectControlContext: jest.fn(),
       createTemplatePlanPreview: jest.fn(),
+      createDryRunActionRun: jest.fn(),
     };
 
     const rendered = await renderInTestApp(
@@ -441,6 +516,7 @@ describe('TemplateRunContent', () => {
           message: 'Plan preview planned.',
         },
       }),
+      createDryRunActionRun: jest.fn(),
     };
 
     const rendered = await renderInTestApp(
@@ -535,6 +611,7 @@ describe('TemplateRunContent', () => {
     const controlContextApi = {
       getProjectControlContext: jest.fn(),
       createTemplatePlanPreview: jest.fn().mockResolvedValue(preview),
+      createDryRunActionRun: jest.fn(),
     };
 
     const rendered = await renderInTestApp(
@@ -612,6 +689,126 @@ describe('TemplateRunContent', () => {
     ).toBeTruthy();
     expect(screen.getByText('Risk: medium')).toBeTruthy();
     expect(screen.getByText('production-like-environment')).toBeTruthy();
+    expect(screen.queryByText('Create TemplateExecution')).toBeNull();
+  });
+
+  it('runs a record-only dry-run from the Plan preview and displays the response boundary', async () => {
+    const preview = templatePreview();
+    const dryRun = dryRunActionRun();
+    const controlContextApi = {
+      getProjectControlContext: jest.fn(),
+      createTemplatePlanPreview: jest.fn().mockResolvedValue(preview),
+      createDryRunActionRun: jest.fn().mockResolvedValue(dryRun),
+    };
+
+    await renderInTestApp(
+      <Routes>
+        <Route
+          path="/idp/templates/:templateId/run"
+          element={
+            <TemplateRunContent
+              projects={[project]}
+              environments={[environment]}
+              templates={[template]}
+              operationLogs={[] as IdpOperationLog[]}
+              executions={[] as IdpTemplateExecution[]}
+              refresh={jest.fn()}
+              controlContextApi={controlContextApi}
+            />
+          }
+        />
+      </Routes>,
+      {
+        routeEntries: [
+          '/idp/templates/node-api/run?projectId=examples&environmentId=examples-dev',
+        ],
+      },
+    );
+
+    fireEvent.click(screen.getByText('Create plan preview'));
+    await waitFor(() => {
+      expect(screen.getByText('Run dry-run')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Run dry-run'));
+
+    await waitFor(() => {
+      expect(controlContextApi.createDryRunActionRun).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectRef: 'system:default/examples',
+          planRef: 'plan:preview-node',
+          idempotencyKey: expect.stringContaining('plan:preview-node'),
+        }),
+      );
+    });
+    expect(screen.getByText('Record-only dry-run')).toBeTruthy();
+    expect(
+      screen.getByText(
+        /does not start a Scaffolder task, create a Git pull request, or start external execution/,
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText('ActionRun ref: action-run:dry-run-preview-node'),
+    ).toBeTruthy();
+    expect(
+      screen.getByText('OperationLog ref: operation-log:dry-run-preview-node'),
+    ).toBeTruthy();
+    expect(screen.getByText('Scaffolder task started: false')).toBeTruthy();
+    expect(screen.getByText('Git pull request created: false')).toBeTruthy();
+    expect(screen.getByText('External execution started: false')).toBeTruthy();
+    expect(screen.queryByText('Create TemplateExecution')).toBeNull();
+  });
+
+  it('keeps dry-run failures retryable without adding execute UI', async () => {
+    const preview = templatePreview();
+    const controlContextApi = {
+      getProjectControlContext: jest.fn(),
+      createTemplatePlanPreview: jest.fn().mockResolvedValue(preview),
+      createDryRunActionRun: jest
+        .fn()
+        .mockRejectedValue(new Error('IDP backend dry-run ActionRun failed')),
+    };
+
+    await renderInTestApp(
+      <Routes>
+        <Route
+          path="/idp/templates/:templateId/run"
+          element={
+            <TemplateRunContent
+              projects={[project]}
+              environments={[environment]}
+              templates={[template]}
+              operationLogs={[] as IdpOperationLog[]}
+              executions={[] as IdpTemplateExecution[]}
+              refresh={jest.fn()}
+              controlContextApi={controlContextApi}
+            />
+          }
+        />
+      </Routes>,
+      {
+        routeEntries: [
+          '/idp/templates/node-api/run?projectId=examples&environmentId=examples-dev',
+        ],
+      },
+    );
+
+    fireEvent.click(screen.getByText('Create plan preview'));
+    await waitFor(() => {
+      expect(screen.getByText('Run dry-run')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Run dry-run'));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('IDP backend dry-run ActionRun failed'),
+      ).toBeTruthy();
+    });
+    expect(screen.getByRole('button', { name: 'Run dry-run' })).toHaveProperty(
+      'disabled',
+      false,
+    );
     expect(screen.queryByText('Create TemplateExecution')).toBeNull();
   });
 });
