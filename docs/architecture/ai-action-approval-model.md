@@ -8,7 +8,7 @@
 
 AI-native control plane では、AI が Project / Environment の context から action plan を提案する。ただし、提案、dry-run、実行、rollback は同じリスクではないため、操作段階ごとに承認境界を分ける。
 
-このモデルは将来の IDP backend plugin / permission policy / frontend plugin の設計入力であり、Backstage 本体や `packages/backend` に直接業務ロジックを置くためのものではない。
+このモデルは、Bara の backend、permission policy、frontend の設計入力である。実装の配置先は利用者 journey と責務境界で選ぶが、server-side enforcement を保つ。
 
 ## Action level
 
@@ -47,6 +47,5 @@ AI-native control plane では、AI が Project / Environment の context から
 ## 実装境界
 
 - Permission evaluation は Backstage permission framework と Catalog ownership を利用する。
-- AI 固有の approval workflow、risk summary、operation log は `plugins/` 配下の IDP frontend/backend plugin に閉じる。
-- `packages/app` は plugin route / navigation の登録だけを行う。
-- `packages/backend` は backend plugin / module の登録だけを行う。
+- AI 固有の approval workflow、risk summary、operation log、UI は、利用者 journey、責務の凝集性、共有範囲、テスト容易性、将来の変更コストで配置先を選ぶ。
+- UI の配置先によらず、permission evaluation と approval enforcement は server-side で行う。

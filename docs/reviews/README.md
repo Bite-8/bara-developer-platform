@@ -12,7 +12,7 @@
 - リポジトリから確認できた事実と、解釈・提案を分離する。
 - 過去の提案を新しい指摘として繰り返さない。
 - Backstage OSS plugin との互換性と、将来の Backstage upgrade 追従性を重視する。
-- IDP 固有の製品振る舞いは `plugins/` 配下に寄せ、`packages/app` / `packages/backend` は薄い合成・配線層として保つ。
+- IDP 固有の製品振る舞いの配置は、利用者 journey、責務の凝集性、共有範囲、テスト容易性、将来の変更コストで選ぶ。Backstage 公開 API と OSS plugin 互換性を維持し、公式 plugin / dependency の内部実装は copy / fork しない。
 
 ## 最新レビュー
 

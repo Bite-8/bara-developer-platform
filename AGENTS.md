@@ -2,7 +2,7 @@
 
 このファイルは、このリポジトリで作業する Codex 向けの永続的なプロジェクト指示です。
 
-このリポジトリは Backstage ベースの Internal Developer Platform、Bara Developer Platform の本体です。Backstage の生成アプリを土台にしつつ、IDP 独自機能はできるだけ plugin / module / extension として追加し、将来の Backstage 更新や OSS plugin 追加との互換性を壊さないことを重視します。
+このリポジトリは Backstage ベースの Internal Developer Platform、Bara Developer Platform の本体です。Backstage の Catalog、Scaffolder、Permission、Search、TechDocs、plugin ecosystem を活用しつつ、Bara 固有のプロダクト体験はアプリ全体に実装してよいものとします。将来の Backstage 更新や OSS plugin 追加との互換性は重視しますが、Bara の UX を Backstage 生成アプリの見た目や plugin 境界に従属させません。
 
 ## 製品ゴール
 
@@ -10,20 +10,17 @@ Backstage を土台に、アップデート追従性と OSS plugin 互換性を�
 
 ## 最重要方針
 
-- Backstage 本体を直接作り替えるのではなく、原則として Backstage の plugin / module / extension / configuration として拡張する。詳細は `docs/how-to-develop.md` と `docs/backstage-extension-policy.md`。
-- 新しい IDP 独自機能は、まず `plugins/` 配下に閉じ込めることを検討する。
-- `packages/app` と `packages/backend` は、基本的に Backstage アプリ本体の配線、登録、合成場所として扱う。
-- `packages/app` や `packages/backend` を変更する場合は、plugin / module の登録、app-level extension、設定接続など、必要最小限の変更にする。
-- 独自の業務ロジック、画面ロジック、ドメイン処理を `packages/app` や `packages/backend` に直接増やさない。
-- OSS plugin 追加、Backstage バージョンアップ、将来の移行を妨げる hard fork 的変更を避ける。
-- 公式 plugin や生成コードの内部実装をコピーして改造しない。
+- Bara の代表 journey、ホーム、navigation、visual system、共通 interaction は `packages/app` を含むアプリ全体で設計・実装してよい。生成直後の Backstage UI を維持することは目標ではない。
+- 独自コードの置き場所は、plugin 境界ではなく、利用者価値、凝集性、共有範囲、テスト容易性、将来の変更コストで選ぶ。`plugins/` は再利用可能な Backstage integration や独立した機能単位に有用だが、必須の配置先ではない。
+- Backstage の公開 API と extension point は活用する。公式 plugin や Backstage dependency の内部実装をコピーして改造したり、更新不能な fork を作ったりしない。
+- 既存 OSS plugin の導入・更新を妨げる変更、または公開 integration contract を壊す変更は、影響と移行方針を明示する。
 - 判断に迷う場合は、変更範囲を広げる前に、なぜその変更が必要かを説明する。
 
 ## ディレクトリ構成
 
-- `packages/app/`: Backstage frontend app。frontend plugin / module の登録、app-level extension、navigation、theme などの配線を扱う。
-- `packages/backend/`: Backstage backend。backend plugin / module の登録を扱う。
-- `plugins/`: IDP 独自の Backstage plugin / module を置く場所。新機能や独自業務ロジックは原則ここに置く。
+- `packages/app/`: Bara frontend app。app shell、代表 journey、navigation、theme、共有 UI と Backstage frontend integration を扱う。
+- `packages/backend/`: Bara backend。API、domain service、外部 integration と Backstage backend integration を扱う。
+- `plugins/`: 独立性または再利用性が高い Backstage plugin / module を置く場所。Bara 固有機能の必須の配置先ではない。
 - `examples/`: catalog entity や software template のサンプル。
 - `docs/`: セットアップ、運用、設計メモ、AI コーディングルール、Backstage カスタマイズ方針などのドキュメント。
 - `app-config.yaml`: ローカル開発・共通設定。
@@ -42,7 +39,7 @@ Backstage を土台に、アップデート追従性と OSS plugin 互換性を�
 - `docs/reviews/`: 直近の製品レビュー、未解決事項、次サイクルへの学習。
 - `docs/ai/output/README.md`: 過去の AI 成果物の位置づけ。個別の `docs/ai/output/**` は historical evidence であり、通常の必読対象ではない。未完了 PR / Issue の再開、過去判断の確認、または reviewer から明示された証跡確認に必要な範囲だけ読む。
 
-可逆で plugin 内に閉じる UI / UX、画面露出、または安全な新機能を試す場合は、`README.md`、UX 原則、拡張方針と変更に直接関係する実装を基本入力とする。source of truth、approval、permission、永続化、外部副作用に触れる場合、およびロードマップ判断では、関連 ADR を含む上記の全てを確認する。正解が事前に確定しないデザインや機能価値のために、調査だけで実装を止めない。
+可逆な UI / UX、画面露出、または安全な新機能を試す場合は、`README.md`、UX 原則、拡張方針と変更に直接関係する実装を基本入力とする。source of truth、approval、permission、永続化、外部副作用に触れる場合、およびロードマップ判断では、関連 ADR を含む上記の全てを確認する。正解が事前に確定しないデザインや機能価値のために、調査だけで実装を止めない。
 
 上記を読んでも判断に必要な証跡が不足する場合は、停止せず、利用可能な証跡から次に検証可能な小さな一歩を選び、未確認事項とリスクを Issue または PR evidence に明記する。
 
@@ -56,7 +53,7 @@ delivery wave に複数 unit を含める場合、利用者価値、依存関係
 
 decision-ready だが今回の wave に含めない候補は捨てず、GitHub Issue として価値、優先順位、依存関係、選外理由を残す。変化する backlog 状態は GitHub を正本とし、repo 内 docs に二重管理しない。分解と delivery wave の詳細は `docs/how-to-plan-delivery-waves.md` を正とする。
 
-デザイン、情報設計、interaction、画面露出、可逆な新機能の採否には唯一解がない。これらは plugin 境界内で安全に戻せるなら、最初の一案を直接実装して標準導線へ出し、後から学ぶことを既定にする。視覚的魅力、洗練、信頼感、Bara らしさ、楽しさ、および試して分かる機能価値は正当な成果であり、定量仮説、複数案比較、人間 owner の事前承認を必要としない。複数 subagent による独立調査は、architecture、外部 integration、永続化、permission、外部副作用、または戻しにくい判断で、調査結果が実装方針を実際に変え得る場合だけ使う。
+デザイン、情報設計、interaction、画面露出、可逆な新機能の採否には唯一解がない。安全に戻せるなら、Bara の標準導線や app shell を含めて最初の一案を直接実装し、後から学ぶことを既定にする。視覚的魅力、洗練、信頼感、Bara らしさ、楽しさ、および試して分かる機能価値は正当な成果であり、定量仮説、複数案比較、人間 owner の事前承認を必要としない。複数 subagent による独立調査は、architecture、外部 integration、永続化、permission、外部副作用、または戻しにくい判断で、調査結果が実装方針を実際に変え得る場合だけ使う。
 
 identity、server-side permission enforcement、Secret・機微情報、データ破壊、外部副作用の制御はコード品質・セキュリティの hard gate とする。UI で見せる画面、情報、導線の選択は通常プロダクト仮説であり、UI の非表示を security control とみなさない。
 

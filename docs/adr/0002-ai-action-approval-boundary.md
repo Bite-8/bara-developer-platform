@@ -3,6 +3,7 @@
 - Status: Accepted
 - Date: 2026-06-17
 - Accepted: 2026-08-01
+- Revised: 2026-08-02
 
 ## 背景
 
@@ -42,10 +43,14 @@ AI action は段階別の approval boundary を持つ。
 
 ## 実装上の含意
 
-- AI action gateway、approval workflow、operation log は `plugins/` 配下の IDP backend plugin / frontend plugin として実装する。
-- `packages/backend` は plugin 登録に限定し、承認ロジックを直接実装しない。
-- `packages/app` は plugin route / navigation 登録に限定し、AI action UI の業務ロジックを直接持たない。
+- AI action gateway、approval workflow、operation log、AI action UI の配置先は、利用者 journey、責務の凝集性、共有範囲、テスト容易性、将来の変更コストで選ぶ。`packages/app`、`packages/backend`、plugin / module のいずれにも実装できる。
 - Scaffolder や Git PR を実行 backend として優先し、独自 executor の重複実装を避ける。
+
+## 2026-08-02 の決定更新
+
+AI action の実装を plugin に限定し、`packages/app` と `packages/backend` を登録・配線だけに制限する規則を撤廃する。これは安全境界ではなく、Backstage compatibility を得るための当初の実装仮説だった。実アプリの起動では、その仮説が Bara の control-plane journey を標準入口へ統合することを妨げた。
+
+Observe / Plan / Propose change / Execute の approval boundary、server-side permission enforcement、Catalog ownership、Environment criticality、audit requirement は本 ADR のまま維持する。配置規則の変更は、これらの enforcement を UI の非表示や任意の client-side logic に移すことを許容しない。
 
 ## 未決事項
 

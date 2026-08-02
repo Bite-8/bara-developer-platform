@@ -74,7 +74,7 @@ cd my-backstage-app
 - `packages/backend`: Backstage のバックエンド
 - `app-config.yaml`: アプリ全体の設定
 
-新しいフロントエンドプラグインは通常 `packages/app` に追加し、バックエンドプラグインや Backend Module は通常 `packages/backend` に追加します。
+これは生成直後の Backstage アプリの一般的な構成です。Bara では、app shell や代表 journey は `packages/app`、Bara 固有の API や domain service は `packages/backend`、独立して再利用・配布・合成する機能は plugin / module に置きます。配置は product goal と責務境界で選びます。
 
 ## 起動する
 

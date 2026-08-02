@@ -4,7 +4,7 @@
 
 このドキュメントは、Bara Developer Platform で `Project` / `Environment` / `Template` / `DeploymentRun` のような IDP 管理モデルを追加する前に、**Backstage Catalog / Git YAML / DB の責務境界**を整理するための設計メモです。
 
-今回の方針は実装方法の詳細ではなく、将来 plugin / module / extension として実装するときに判断がぶれないようにするための責務分担を定義します。
+今回の方針は実装方法の詳細ではなく、将来の実装で判断がぶれないようにするための責務分担を定義します。
 
 ## 基本方針
 
@@ -12,9 +12,9 @@
 - Git YAML は、宣言的でレビュー可能な望ましい状態、所有者、ライフサイクル、関連リソースの定義を置く場所として扱う。
 - DB は、実行結果、進捗、イベント、監査ログ、UI の一時状態など、Git YAML に戻すべきではない運用時データを置く場所として扱う。
 - `Project` / `Environment` / `Template` のような長寿命の管理対象は、まず Catalog entity または Catalog entity から辿れる Git YAML として表現できるかを検討する。
-- `DeploymentRun` のような短寿命・履歴型・高頻度更新のデータは、Catalog entity ではなく IDP plugin の DB に置く。
+- `DeploymentRun` のような短寿命・履歴型・高頻度更新のデータは、Catalog entity ではなく IDP runtime DB に置く。
 - DB を authoritative source にしすぎない。再作成可能な宣言的状態は Git YAML、検索・所有・関係性の公開面は Catalog に寄せる。
-- Backstage 本体や生成アプリを直接変更せず、IDP 固有の管理モデルは原則として `plugins/` 配下の plugin / module に閉じ込める。
+- IDP 固有の管理モデルの配置先は、利用者 journey、責務の凝集性、共有範囲、運用境界で選ぶ。配置先は Catalog / Git YAML / DB の責務分担を変えない。
 
 ## 三層の役割
 
@@ -36,7 +36,7 @@ Catalog に置くべきではないものは次の通りです。
 - 秒単位・分単位で頻繁に変わる進捗やジョブ状態。
 - 大量のログ、外部 CI/CD の生イベント、監査イベント本文。
 - UI のフィルタ条件、ウィザード途中状態、非公開の内部計算結果。
-- IDP plugin の内部実装に閉じるべき正規化テーブル。
+- runtime 実装の内部に閉じるべき正規化テーブル。
 
 Catalog は「すべてのデータの保存場所」ではありません。Catalog entity は、IDP の他機能が安全に参照できる公開されたモデルに限定します。
 
@@ -166,10 +166,7 @@ DB は runtime の事実を保持する場所です。長寿命リソースの�
 将来実装するときは、次の境界を守ります。
 
 - Catalog 取り込みや entity 変換は Catalog backend module または provider / processor として実装する。
-- `Project` / `Environment` / `Template` の UI と業務 API は `plugins/` 配下の IDP plugin として実装する。
-- `DeploymentRun` の DB schema、状態遷移、外部連携は IDP backend plugin に閉じ込める。
-- `packages/app` は frontend plugin / extension の登録に限定する。
-- `packages/backend` は backend plugin / module の登録に限定する。
+- `Project` / `Environment` / `Template` の UI と業務 API、`DeploymentRun` の DB schema、状態遷移、外部連携は、利用者 journey と domain boundary に応じて Bara app/backend、plugin / module、library に実装する。
 - Backstage 公式 plugin の内部実装をコピーして改造しない。
 
 ## 初期設計の推奨
@@ -179,9 +176,9 @@ DB は runtime の事実を保持する場所です。長寿命リソースの�
 - `Project`: Git YAML を正とする Catalog entity。
 - `Environment`: Git YAML を正とする Catalog entity、または `Project` entity から relation で辿れる resource。
 - `Template`: Backstage Scaffolder template を優先し、足りない場合のみ独自 template entity を検討する。
-- `DeploymentRun`: IDP backend plugin の DB table。Catalog entity にはしない。
+- `DeploymentRun`: IDP runtime DB の table。Catalog entity にはしない。
 
-この分け方により、Backstage の既存機能である Catalog / Scaffolder / Permission / Search との互換性を保ちながら、IDP 固有の実行履歴や状態管理を plugin 内部に閉じ込められます。
+この分け方により、Backstage の既存機能である Catalog / Scaffolder / Permission / Search との互換性を保ちながら、IDP 固有の実行履歴や状態管理を Catalog と desired state から分離できます。
 
 ## 未決事項
 

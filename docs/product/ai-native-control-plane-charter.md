@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-06-17
-- Last reviewed: 2026-08-01
+- Last reviewed: 2026-08-02
 - Related review: `docs/reviews/2026-06-16-product-review-v2-ai-native-control-plane.md`
 - Related ADRs: `docs/adr/0001-idp-management-source-of-truth.md`, `docs/adr/0002-ai-action-approval-boundary.md`
 
@@ -36,14 +36,12 @@ Project / Environment / Template の desired state は ADR 0001 に従って Git
 
 1. **Plan before action**: AI は実行前に plan、expected change、risk、approval requirement を提示する。
 2. **Human-approvable by default**: production や high criticality environment への変更は、人間が理解できる承認境界を持つ。
-3. **Backstage-compatible extension**: AI 固有の画面・API・業務ルールは `plugins/` 配下の plugin / module / extension として追加し、`packages/app` / `packages/backend` には直接蓄積しない。
+3. **Backstage-compatible product**: Backstage の Catalog、Scaffolder、Permission、Search、TechDocs、公開 API を活用しながら、AI 固有の画面・API・業務ルールを Bara の app shell と backend を含む適切な所有境界に実装する。公式 plugin や Backstage dependency の内部実装は copy / fork しない。
 4. **Catalog as context index**: Catalog は ownership、relation、stable reference の公開面として使い、runtime log を Catalog entity に埋め込まない。
 5. **Scaffolder and Git first**: 変更実行は、可能な限り Scaffolder task または Git PR に接続し、独自 executor の重複実装を避ける。
 6. **Auditable automation**: AI action と human action の区別、承認者、policy decision、external execution ID を audit trail に残す。
 
 ## 非目標
 
-- Backstage app shell を独自 AI UI で全面置換しない。
 - Catalog / Scaffolder の内部実装を copy / fork して改造しない。
 - 初期 MVP で完全自律実行や任意コマンド実行を提供しない。
-- `packages/backend` を IDP runtime database や agent gateway の所有者にしない。

@@ -9,7 +9,7 @@
 
 Backstage は Catalog、Scaffolder、Permission、Search、TechDocs、共通 component、plugin ecosystem を持つ強い土台です。その標準 UI は、一貫性、accessibility、OSS plugin 互換性を守る baseline として利用します。一方、Backstage 標準または現在の Bara UI が、Bara の対象利用者にとって最適な情報設計、navigation、interaction であるとは仮定しません。
 
-Bara は Backstage の見た目を変えること自体も、正当な成果になり得ると考えます。application developer と Platform Engineer が Project / Environment context から安全に次の行動へ進める体験に加え、視覚的魅力、洗練、信頼感、Bara らしさ、楽しさを試します。デザインや安全な新機能に唯一解があるとは仮定せず、可逆な変更は先に出して学びます。改善は `plugins/` 配下の frontend plugin / module / extension、app-level extension、configuration を優先し、app shell や公式 plugin の hard fork を避けます。
+Bara は Backstage の見た目を変えること自体も、正当な成果になり得ると考えます。application developer と Platform Engineer が Project / Environment context から安全に次の行動へ進める体験に加え、視覚的魅力、洗練、信頼感、Bara らしさ、楽しさを試します。デザインや安全な新機能に唯一解があるとは仮定せず、可逆な変更は先に出して学びます。改善は `packages/app` を含む Bara の app shell と、必要に応じた plugin / module / extension / configuration に実装します。公式 plugin の内部実装や Backstage dependency の hard fork は避けます。
 
 ## UX の成果
 
@@ -28,7 +28,7 @@ page view、click 数、滞在時間だけを成功とみなしません。速�
 
 ## Ship-and-learn の契約
 
-可逆で plugin 内に閉じ、identity、server-side permission enforcement、Secret・機微情報、データ破壊、外部副作用を変えない UI / UX と安全な新機能は、exploration として直接実装・merge してよい。価値や見た目の正解を事前に証明する必要はない。短い変更意図、確認 route または safe fixture、revert 方法だけを残す。
+可逆で、identity、server-side permission enforcement、Secret・機微情報、データ破壊、外部副作用を変えない UI / UX と安全な新機能は、Bara の app shell を含めて exploration として直接実装・merge してよい。価値や見た目の正解を事前に証明する必要はない。短い変更意図、確認 route または safe fixture、revert 方法だけを残す。
 
 主要導線を置き換える UI、または approval、risk、permission、execute の意味を扱う UI / feature は、既存 journey、対象利用者、期待する挙動、revert 方法を Issue と PR に残す。実際の security / side-effect 境界を変える場合は ADR と品質・セキュリティ契約に従う。
 

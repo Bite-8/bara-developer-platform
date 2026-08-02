@@ -6,7 +6,7 @@ Bara Developer Platform は、Spotify で生まれたオープンソースの [B
 
 ## なぜ Backstage を土台にするのか
 
-IDP の基盤機能を独自に再実装するのではなく、Backstage の Catalog、Scaffolder、Permission、Search、TechDocs、plugin ecosystem を利用します。これにより、Platform team は開発者ポータルそのものの維持や upstream 追従に費やす管理コストを抑え、Bara 固有の価値である安全な自動化、承認、監査、agent 向け control surface に集中できます。
+IDP の基盤機能には Backstage の Catalog、Scaffolder、Permission、Search、TechDocs、plugin ecosystem を利用します。一方で、Bara はそれらを組み合わせる独自の developer control plane であり、Bara 固有の app shell、journey、情報設計、画面、API をアプリ全体に実装します。Platform team は upstream の能力を活かしながら、安全な自動化、承認、監査、agent 向け control surface に集中できます。
 
 ## North Star
 
@@ -25,10 +25,9 @@ AI-native developer control plane の MVP を定義し、その最小の実装�
 
 ## 非目標
 
-- Backstage の app shell、Catalog、Scaffolder を fork または全面的に置き換えること。
+- Catalog、Scaffolder など Backstage capability の内部実装を copy / fork して置き換えること。
 - Scaffolder や Git を重複して実装する独自 executor を最初から作ること。
 - 初期 MVP で、任意コマンドの実行や人間の承認なしの本番自律実行を提供すること。
-- `packages/app` や `packages/backend` に IDP 固有の業務ロジックを蓄積すること。
 
 ## 製品判断の参照先
 
