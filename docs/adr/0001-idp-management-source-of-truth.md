@@ -3,6 +3,7 @@
 - Status: Accepted
 - Date: 2026-06-16
 - Accepted: 2026-08-01
+- Revised: 2026-08-02
 
 ## 背景
 
@@ -30,8 +31,14 @@ Backstage にはすでに Catalog と Scaffolder という基本機能があり�
 - Project / Environment / Template が desired state を表す場合、その定義は宣言的かつレビュー可能に保つ。
 - Backstage Catalog は ownership、search、relation、cross-plugin reference の公開 index として使う。
 - IDP backend plugin の database は runtime record、高頻度の状態変更、履歴、retry、lock、external execution ID、audit log を扱う。
-- `packages/backend` を IDP business logic の所有者にしない。永続化や外部連携が必要になったら、`plugins/` 配下に IDP backend plugin または backend module を追加する。
+- IDP runtime / audit の実装は、責務の凝集性、共有範囲、運用境界に応じて `packages/backend`、plugin / module、library のいずれにも置ける。配置先は source of truth を変えない。
 - Backstage Catalog や Scaffolder の内部実装を fork または copy しない。configuration、extension point、backend module、Scaffolder integration を優先する。
+
+## 2026-08-02 の決定更新
+
+`packages/backend` を IDP business logic の所有者にしない、または永続化・外部連携を plugin に限定する実装規則を撤廃する。実アプリの起動により、配置規則が Bara の標準 journey を作るより、Bara の体験を `/idp` に孤立させる方向へ働くことが分かったためである。
+
+この更新は Project / Environment / Template の desired state、runtime / audit record、Catalog の公開 index としての役割という本 ADR の source-of-truth 決定を変更しない。Backstage capability の内部実装を fork / copy しない制約も維持する。
 
 ## 結果
 
