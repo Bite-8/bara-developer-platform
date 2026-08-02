@@ -2,7 +2,11 @@ import { renderInTestApp } from '@backstage/test-utils';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { Route, Routes } from 'react-router-dom';
 
-import { ProjectDetailContent, TemplateRunContent } from './IdpPages';
+import {
+  EnvironmentDetailPage,
+  ProjectDetailContent,
+  TemplateRunContent,
+} from './IdpPages';
 import {
   IdpEnvironment,
   IdpOperationLog,
@@ -443,6 +447,75 @@ describe('ProjectDetailContent', () => {
     expect(
       screen.getByText(
         'Production or critical execution requires explicit human approval.',
+      ),
+    ).toBeTruthy();
+  });
+});
+
+describe('EnvironmentDetailPage', () => {
+  const renderEnvironmentDetail = async ({
+    route = '/idp/environments/examples-dev',
+    nextProject = project,
+    nextTemplate = template,
+  }: {
+    route?: string;
+    nextProject?: IdpProject;
+    nextTemplate?: IdpTemplate;
+  } = {}) => {
+    await renderInTestApp(
+      <Routes>
+        <Route
+          path="/idp/environments/:environmentId"
+          element={
+            <EnvironmentDetailPage
+              projects={[nextProject]}
+              environments={[environment]}
+              templates={[nextTemplate]}
+              operationLogs={[] as IdpOperationLog[]}
+              executions={[] as IdpTemplateExecution[]}
+              refresh={jest.fn()}
+            />
+          }
+        />
+      </Routes>,
+      { routeEntries: [route] },
+    );
+  };
+
+  it('links an Environment detail plan preview CTA to the related available Template run route with Project and Environment context', async () => {
+    await renderEnvironmentDetail();
+
+    const cta = screen.getByRole('button', { name: 'Create plan preview' });
+    expect(cta.getAttribute('href')).toBe(
+      '/idp/templates/node-api/run?projectId=examples&environmentId=examples-dev',
+    );
+    expect(
+      screen.getByText('Preview target: Node API for Examples / examples-dev.'),
+    ).toBeTruthy();
+    expect(screen.getByText('No execute UI')).toBeTruthy();
+    expect(screen.getByText('No external side effects')).toBeTruthy();
+    expect(screen.queryByText('Create TemplateExecution')).toBeNull();
+  });
+
+  it('falls back to the Templates list when the Environment Project has no usable Template mapping', async () => {
+    await renderEnvironmentDetail({
+      nextProject: { ...project, templateIds: ['disabled-template'] },
+      nextTemplate: {
+        ...template,
+        id: 'disabled-template',
+        status: 'draft',
+        enabled: false,
+      },
+    });
+
+    expect(screen.queryByRole('button', { name: 'Create plan preview' })).toBe(
+      null,
+    );
+    const cta = screen.getByRole('button', { name: 'Open Templates' });
+    expect(cta.getAttribute('href')).toBe('/idp/templates');
+    expect(
+      screen.getByText(
+        'Choose from available Templates before creating a Plan preview.',
       ),
     ).toBeTruthy();
   });
