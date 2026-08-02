@@ -6,6 +6,8 @@ import {
   templates as seedTemplates,
 } from '../data/mockData';
 import {
+  IdpDryRunActionRun,
+  IdpDryRunActionRunInput,
   IdpOperationLog,
   IdpTemplateExecution,
   IdpTemplatePlanPreview,
@@ -114,7 +116,9 @@ class LocalIdpApi implements IdpApi {
     );
   }
 
-  async createDryRunActionRun() {
+  async createDryRunActionRun(
+    _input: IdpDryRunActionRunInput,
+  ): Promise<IdpDryRunActionRun> {
     throw new Error(
       'Dry-run ActionRun must be created by the backend IDP plugin.',
     );
