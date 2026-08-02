@@ -259,6 +259,51 @@ describe('ControlContextService', () => {
     expect(context.latestActionRun).toBeUndefined();
   });
 
+  it('keeps repeated Plan preview IDs distinct without weakening idempotency', async () => {
+    const catalog = createCatalog();
+    const runtimeStore = new InMemoryRuntimeAuditStore();
+    const service = new ControlContextService(catalog as any, runtimeStore);
+    const request = {
+      projectRef: 'system:default/payments',
+      environmentRef: 'resource:default/payments-dev',
+      templateRef: 'template:default/node-service',
+      parameters: { serviceName: 'checkout-api' },
+    };
+    const first = await service.createTemplatePlanPreview({
+      credentials,
+      request: {
+        ...request,
+        idempotencyKey:
+          'system:default/payments:resource:default/payments-dev:template:default/node-service:first-preview',
+      },
+    });
+    const second = await service.createTemplatePlanPreview({
+      credentials,
+      request: {
+        ...request,
+        idempotencyKey:
+          'system:default/payments:resource:default/payments-dev:template:default/node-service:second-preview',
+      },
+    });
+
+    expect(first.plan.id).toHaveLength(80);
+    expect(second.plan.id).toHaveLength(80);
+    expect(second.plan.id).not.toBe(first.plan.id);
+    expect(second.plan.planRef).not.toBe(first.plan.planRef);
+    expect(second.operationLog.id).not.toBe(first.operationLog.id);
+
+    await expect(
+      service.createTemplatePlanPreview({
+        credentials,
+        request: {
+          ...request,
+          idempotencyKey:
+            'system:default/payments:resource:default/payments-dev:template:default/node-service:first-preview',
+        },
+      }),
+    ).rejects.toThrow(/already exists and cannot be overwritten/);
+  });
+
   it('records a side-effect-free dry-run ActionRun for an existing Plan and returns it from Project control context', async () => {
     const catalog = createCatalog();
     const runtimeStore = new InMemoryRuntimeAuditStore();

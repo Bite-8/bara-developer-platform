@@ -4,6 +4,7 @@ import {
   RELATION_PART_OF,
   stringifyEntityRef,
 } from '@backstage/catalog-model';
+import { createHash } from 'crypto';
 import {
   AuthenticationError,
   InputError,
@@ -73,12 +74,19 @@ const isProductionLikeEnvironment = (options: {
   );
 };
 
-const stableIdPart = (value: string) =>
-  value
+const stableIdPart = (value: string) => {
+  const normalized = value
     .toLocaleLowerCase('en-US')
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80);
+    .replace(/^-+|-+$/g, '');
+
+  if (normalized.length <= 80) {
+    return normalized;
+  }
+
+  const digest = createHash('sha256').update(value).digest('hex').slice(0, 12);
+  return `${normalized.slice(0, 67).replace(/-+$/g, '')}-${digest}`;
+};
 
 const statusForPolicyDecision = (
   policyDecision: PolicyDecision,
