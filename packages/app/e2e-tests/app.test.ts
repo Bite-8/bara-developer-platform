@@ -44,6 +44,16 @@ test('App should open Bara control-plane entry after guest entry', async ({
     page.getByRole('heading', { name: 'Bara IDP', exact: true }),
   ).toBeVisible();
   await expect(
+    page.getByRole('heading', { name: 'Data boundary', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/not live Catalog, GitHub, or runtime status/),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Open Project context' }),
+  ).toHaveAttribute('href', '/idp/projects/examples');
+  await expect(page.getByText('Connected', { exact: true })).toHaveCount(0);
+  await expect(
     nav.getByRole('link', { name: 'Catalog', exact: true }),
   ).toBeVisible();
   await nav.getByRole('link', { name: 'Catalog', exact: true }).click();
