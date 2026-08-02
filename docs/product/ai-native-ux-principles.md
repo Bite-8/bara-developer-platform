@@ -9,7 +9,7 @@
 
 Backstage は Catalog、Scaffolder、Permission、Search、TechDocs、共通 component、plugin ecosystem を持つ強い土台です。その標準 UI は、一貫性、accessibility、OSS plugin 互換性を守る baseline として利用します。一方、Backstage 標準または現在の Bara UI が、Bara の対象利用者にとって最適な情報設計、navigation、interaction であるとは仮定しません。
 
-Bara は Backstage の見た目を変えること自体を成果にせず、application developer と Platform Engineer が Project / Environment context から安全に次の行動へ進める体験を仮説検証します。改善は `plugins/` 配下の frontend plugin / module / extension、app-level extension、configuration を優先し、app shell や公式 plugin の hard fork を避けます。
+Bara は Backstage の見た目を変えること自体も、正当な成果になり得ると考えます。application developer と Platform Engineer が Project / Environment context から安全に次の行動へ進める体験に加え、視覚的魅力、洗練、信頼感、Bara らしさ、楽しさを試します。デザインや安全な新機能に唯一解があるとは仮定せず、可逆な変更は先に出して学びます。改善は `plugins/` 配下の frontend plugin / module / extension、app-level extension、configuration を優先し、app shell や公式 plugin の hard fork を避けます。
 
 ## UX の成果
 
@@ -22,27 +22,21 @@ Bara は Backstage の見た目を変えること自体を成果にせず、appl
 - Error recovery: empty、loading、failure、permission deny、stale data から次に何をすべきか分かるか。
 - Confidence and cognitive load: なぜその提案なのか、何が変わるか、戻せるかを過剰な情報探索なしに判断できるか。
 - Accessibility: keyboard、focus、label、contrast、screen-reader semantics が主要導線を妨げないか。
+- Visual quality: 魅力、情報の豊かさ、洗練、一貫性、Bara らしさ、触ってみたくなる印象があるか。
 
 page view、click 数、滞在時間だけを成功とみなしません。速く離脱したのが成功か失敗かは journey の task result と合わせて判断します。
 
-## 仮説検証の契約
+## Ship-and-learn の契約
 
-UI / UX の delivery candidate は GitHub Issue に次を持ちます。
+可逆で plugin 内に閉じ、identity、server-side permission enforcement、Secret・機微情報、データ破壊、外部副作用を変えない UI / UX と安全な新機能は、exploration として直接実装・merge してよい。価値や見た目の正解を事前に証明する必要はない。短い変更意図、確認 route または safe fixture、revert 方法だけを残す。
 
-1. 対象利用者と job / decision。
-2. 現在の Backstage または Bara journey を安全な fixture で操作した baseline observation。
-3. 観測した摩擦。事実、推論、好みを分ける。
-4. 変更仮説。「もし X を変えると、Y という理由で Z が改善する」の形にする。
-5. 比較する最小 interaction。必要なら複数案を prototype、feature flag、または小さな連続 unit にする。
-6. 成功、失敗、`UNVERIFIED` を判定する観測方法。
-7. E2E、owner acceptance、Product Reviewer の再現 journey。
-8. 非対象、compatibility risk、revert または次の判断。
+主要導線を置き換える UI、または approval、risk、permission、execute の意味を扱う UI / feature は、既存 journey、対象利用者、期待する挙動、revert 方法を Issue と PR に残す。実際の security / side-effect 境界を変える場合は ADR と品質・セキュリティ契約に従う。
 
-初期段階では safe fixture による task-based observation、Playwright E2E、owner / reviewer の定性観測を使います。利用者数が増えたら、同意・privacy・retention を定義したうえで plugin analytics と task outcome を接続します。十分な traffic がない段階で A/B test の統計的有意性を装いません。
+初期段階では、必要に応じて safe fixture、targeted test、route smoke、Playwright E2E、まれに得られる人間の定性フィードバックを使います。E2E は主要導線の置換または安全意味を持つ変更に使い、visual exploration の都度要求しません。十分な traffic がない段階で A/B test の統計的有意性を装いません。
 
 ### 複数の方法と案を使う
 
-意味のある UX 判断では、一つの screenshot、サイト、analysis method だけで結論を出しません。課題に relevant な方法を複数組み合わせます。
+architecture、外部 integration、永続化、permission、外部副作用、または戻しにくい interaction を選ぶときは、一つの screenshot、サイト、analysis method だけで結論を出しません。課題に relevant な方法を複数組み合わせます。可逆な visual / interaction exploration や安全な新機能では、この発散は既定にしません。
 
 - 複数の developer portal、control plane、運用 tool、類似した一般 product の公開 journey benchmark
 - task analysis、cognitive walkthrough、journey mapping
@@ -53,7 +47,7 @@ UI / UX の delivery candidate は GitHub Issue に次を持ちます。
 
 複数 product を見る目的は見た目を模倣することではなく、同じ task をどう構造化し、何を省略し、どこで feedback / risk / recovery を示すかを比較することです。調査 subagent には異なるサイト群または analysis lens を割り当て、初期案を独立に作らせます。
 
-メイン agent は原則 2〜4 案を比較し、暫定推奨、trade-off、選外理由、判断を変える追加証拠を Issue に残します。Product Reviewer は実装後の使いやすさだけでなく、選択した案が観測された課題と alternatives に照らして妥当かを確認します。
+メイン agent は、上記の高リスク判断で必要な場合だけ 2〜4 案を比較し、暫定推奨、trade-off、選外理由、判断を変える追加証拠を Issue に残します。Product Reviewer は求められたときに利用者体験への助言を返せるが、通常の visual / interaction exploration や新機能の merge veto を持たない。
 
 ## AI interaction を解法より先に固定しない
 

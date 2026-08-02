@@ -31,7 +31,7 @@ Backstage を土台に、アップデート追従性と OSS plugin 互換性を�
 
 ## 製品判断時の必読コンテキスト
 
-製品判断、ロードマップ検討、今回の運営サイクルの対象選定、Issue 化を行う前に、必ず次のファイルを確認する。
+製品判断、ロードマップ検討、今回の運営サイクルの対象選定、Issue 化を行う前に、次のコンテキストを変更のリスクに応じて確認する。
 
 - `README.md`: プロジェクト最上位の製品概要、North Star、現在の開発段階、非目標、参照先。
 - `docs/product/ai-native-control-plane-charter.md`: 製品方針、MVP、control-plane object、製品原則、非目標。
@@ -42,6 +42,8 @@ Backstage を土台に、アップデート追従性と OSS plugin 互換性を�
 - `docs/reviews/`: 直近の製品レビュー、未解決事項、次サイクルへの学習。
 - `docs/ai/output/README.md`: 過去の AI 成果物の位置づけ。個別の `docs/ai/output/**` は historical evidence であり、通常の必読対象ではない。未完了 PR / Issue の再開、過去判断の確認、または reviewer から明示された証跡確認に必要な範囲だけ読む。
 
+可逆で plugin 内に閉じる UI / UX、画面露出、または安全な新機能を試す場合は、`README.md`、UX 原則、拡張方針と変更に直接関係する実装を基本入力とする。source of truth、approval、permission、永続化、外部副作用に触れる場合、およびロードマップ判断では、関連 ADR を含む上記の全てを確認する。正解が事前に確定しないデザインや機能価値のために、調査だけで実装を止めない。
+
 上記を読んでも判断に必要な証跡が不足する場合は、停止せず、利用可能な証跡から次に検証可能な小さな一歩を選び、未確認事項とリスクを Issue または PR evidence に明記する。
 
 ## 開発サイクルのトリガーと責務
@@ -50,11 +52,13 @@ Backstage を土台に、アップデート追従性と OSS plugin 互換性を�
 
 粗いゴールは、そのまま 1 PR に押し込まず、initiative、decision-ready backlog、今回の coherent delivery wave、個別 delivery unit へ分解する。1 delivery unit は 1 Issue、原則 1 PR、独立した validation、fixed-SHA review、merge / hold 判断を持つ。1 回の開発サイクルは 1 PR の作成で終了せず、選択した delivery wave の unit が merge、明示的 hold、または blocked に収束するまで進める。
 
-delivery wave に複数 unit を含める場合、利用者価値、依存関係、順序、ファイル所有権、終了条件を記録する。依存が解け、所有ファイルまたは worktree を分けられる ready unit は、利用可能な subagent 枠で原則並行実施する。枠が空いたら dependency graph の次の ready unit を補充する。依存する unit だけを predecessor の merge 後に順次実施する。各 PR の CI、Quality / Product review、merge / hold 判断も他の ready PR を待たずに並行して進める。PR を巨大化したり、別 unit の failure を理由に各 PR の review / merge gate を省略したりしない。選ぶべき unit がない場合も有効な結果として、根拠、更新した Issue、次の観測条件を記録する。
+delivery wave に複数 unit を含める場合、利用者価値、依存関係、順序、ファイル所有権、終了条件を記録する。依存が解け、所有ファイルまたは worktree を分けられる ready unit は、利用可能な subagent 枠で原則並行実施する。枠が空いたら dependency graph の次の ready unit を補充する。依存する unit だけを predecessor の merge 後に順次実施する。各 PR の CI、Quality review、merge / hold 判断も他の ready PR を待たずに並行して進める。Product review は必要なときの助言であり、通常の UI / UX や新機能の merge gate ではない。PR を巨大化したり、別 unit の failure を理由に品質・安全性の review gate を省略したりしない。選ぶべき unit がない場合も有効な結果として、根拠、更新した Issue、次の観測条件を記録する。
 
 decision-ready だが今回の wave に含めない候補は捨てず、GitHub Issue として価値、優先順位、依存関係、選外理由を残す。変化する backlog 状態は GitHub を正本とし、repo 内 docs に二重管理しない。分解と delivery wave の詳細は `docs/how-to-plan-delivery-waves.md` を正とする。
 
-意味のある UI / UX、機能、architecture、外部 integration の不確実性がある場合は、最初の思いつきをそのまま実装しない。異なる evidence source と analysis lens を持つ複数 subagent で独立に調査・案出しし、メイン agent が候補、根拠、trade-off、未確認事項を比較して暫定推奨を選ぶ。subagent は初期案出しでは互いの結論を参照せず、anchoring と重複を避ける。暫定推奨と選ばなかった有力案は Issue に残し、owner と Product Reviewer が比較できるようにする。軽微な bug、機械的変更、既に受入条件で解法が決まっている変更に、形式的な複数案を要求しない。
+デザイン、情報設計、interaction、画面露出、可逆な新機能の採否には唯一解がない。これらは plugin 境界内で安全に戻せるなら、最初の一案を直接実装して標準導線へ出し、後から学ぶことを既定にする。視覚的魅力、洗練、信頼感、Bara らしさ、楽しさ、および試して分かる機能価値は正当な成果であり、定量仮説、複数案比較、人間 owner の事前承認を必要としない。複数 subagent による独立調査は、architecture、外部 integration、永続化、permission、外部副作用、または戻しにくい判断で、調査結果が実装方針を実際に変え得る場合だけ使う。
+
+identity、server-side permission enforcement、Secret・機微情報、データ破壊、外部副作用の制御はコード品質・セキュリティの hard gate とする。UI で見せる画面、情報、導線の選択は通常プロダクト仮説であり、UI の非表示を security control とみなさない。
 
 「定期実行して」はスケジューラ設定の intent として扱う。ユーザーがこの場で開発サイクル実行を求めていることが明らかな場合だけ `$run-idp-development-cycle` を実行し、時刻に基づく自動起動を暗黙に構成しない。
 
@@ -65,29 +69,33 @@ decision-ready だが今回の wave に含めない候補は捨てず、GitHub I
 変更を伴う delivery unit は、reviewer が PR head から再現可能な動作確認計画を持たなければならない。詳細な形式、環境準備、証跡の扱いは `docs/how-to-review-and-verify.md` を参照する。
 
 - 各受入条件を ID で管理し、前提データ、操作または API request、期待結果、自動検証、手動レビュー方法を対応付ける。
-- 利用者向け変更には、製品所有者が preview または安全なローカル fixture で短時間に再現できる owner acceptance journey を定義する。
-- UI を変更する場合は、対象利用者が行う主要導線を少なくとも一つ定義し、可能な限り Playwright E2E test で自動化する。自動化できない場合は、理由と手動再現手順を PR に残す。
+- UI / UX または安全な新機能には、基本操作を確認できる route または safe fixture と、短い変更意図・revert 方法を残す。人間からのフィードバックは歓迎するが、常時の owner acceptance は merge 条件にしない。
+- Playwright E2E は既存の主要導線を置き換える変更、または承認・risk・permission・execute の意味を扱う UI / feature に要求する。可逆な visual / interaction exploration は、対象 test または route smoke と手動確認でよい。
 - backend API または domain logic を変更する場合は、正常系と主要な拒否・境界条件を対象 test または integration test で確認する。
 - production、永続データ、認証、権限、外部連携、migration、deployment に影響する変更は、relevant な rollout、rollback、backup / restore、observability、Secret 境界を受入条件または非対象・残余リスクに明記する。本番実行は開発サイクルに含めず、ユーザーの明示依頼と承認を必要とする。
 - 起動確認はプロセスが port を開いたことだけでは足りない。対象の UI 操作または API request が期待結果を返すことまで確認する。
 - PR 固有の実装・review evidence は、対象 PR への追加 commit ではなく、PR body、Issue、または reviewed SHA を明記した GitHub comment / check に残す。repo 内 docs は長寿命の製品判断、方針、設計記録に限る。
-- Quality Reviewer と Product Reviewer は Implementer の結果を転載せず、PR の固定 commit を対象に必要な確認を独立して行う。結果は `PASS` / `FAIL` / `UNVERIFIED` に統一し、PR URL、base branch、reviewed head SHA、AC ごとの結果、verdict を GitHub comment / check またはメイン agent への返答に残す。PR head が変わった場合、旧 SHA の verdict を新 SHA に流用しない。
+- Quality Reviewer は Implementer の結果を転載せず、PR の固定 commit を対象に correctness、security、regression、Backstage compatibility を独立確認する。結果は `PASS` / `FAIL` / `UNVERIFIED` に統一し、PR URL、base branch、reviewed head SHA、AC ごとの結果、verdict を GitHub comment / check またはメイン agent への返答に残す。PR head が変わった場合、旧 verdict を新 SHA に流用しない。Product Reviewer は必要に応じて利用者体験への助言を返せるが、通常の UI / UX・新機能の merge veto を持たない。
 - Secret、token、個人情報、または副作用を伴う本番操作をレビュー手順・fixture・証跡に使わない。外部環境が必要で再現できない場合は、必要な環境と未検証理由を明示する。
 
 ## 変更後の品質確認・起動確認
 
-コードを変更した場合は、作業完了前に必ず品質確認と起動確認を行う。以下のコマンドは、必ずプロジェクトルートで実行する。
+コードを変更した場合は、作業完了前に変更リスクに見合う品質確認を行う。PR CI は format、lint、type check、unit / integration test を継続して品質 gate とする。ローカルでは、少なくとも変更対象の format、lint、type check、focused test を実行する。広い suite と起動確認は、変更が依存境界・主要導線・runtime behavior に触れるときに実行する。
 
 ```bash
+# dependency change または新しい checkout で必要な場合
 yarn install --immutable
+# すべてのコード変更で実行する core quality checks
 yarn prettier:check
 yarn lint:all
 yarn tsc:full
+# focused test の代わりに広い suite が必要な場合
 yarn test --watch=false
+# runtime behavior を確認する必要がある場合
 yarn start
 ```
 
-UI 導線を変更した場合は、Playwright browser を準備して `yarn test:e2e` も実行する。E2E の browser が未導入なら `yarn exec playwright install chrome --no-shell` を一度実行する。常駐する `yarn start` は readiness と対象導線を確認した後に終了してよい。実行不能または失敗した必須確認は、成功扱いにせず PR body、Issue、または reviewed SHA 付き GitHub comment / check に理由・影響・再現手順を記録する。
+主要導線または安全意味を持つ UI / feature を変更した場合は、Playwright browser を準備して `yarn test:e2e` も実行する。E2E の browser が未導入なら `yarn exec playwright install chrome --no-shell` を一度実行する。常駐する `yarn start` は、必要な場合に readiness と対象導線を確認した後に終了してよい。実行不能または失敗した必須確認は、成功扱いにせず PR body、Issue、または reviewed SHA 付き GitHub comment / check に理由・影響・再現手順を記録する。
 
 ## 成果物
 

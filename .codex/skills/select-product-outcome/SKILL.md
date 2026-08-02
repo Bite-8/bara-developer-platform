@@ -26,14 +26,14 @@ description: Internal run-idp-development-cycle step. Select and issue the evide
 粗い Project goal を一つの実装案へ直結させず、次の順序で分解する。
 
 1. 対象利用者、解く課題、成果指標を持つ initiative を定義する。
-2. UI / UX、frontend、backend / domain、integration、data / migration、security / permission、validation、owner acceptance、operability の relevant な観点を調べる。
+2. UI / UX、frontend、backend / domain、integration、data / migration、security / permission、validation、operability の relevant な観点を調べる。
 3. 独立して価値を観測できる delivery unit または判断を下す discovery unit に分ける。
 4. predecessor / successor、並行可能性、所有ファイルまたは worktree、rollout 順序を dependency graph として記す。
 5. 今回連続して進める最小の coherent delivery wave と、backlog に残す候補を分ける。
 
-UI / UX unit は `docs/product/ai-native-ux-principles.md` に従い、Backstage 標準または現在の Bara UI を baseline とする。baseline observation、変更仮説、比較する interaction 案、成功 / 失敗の観測、revert または次の判断を Issue に持たせる。AI chat、recommended-action card、guided workflow など特定 UI pattern を課題観測より先に正解としない。
+可逆な UI / UX unit と安全な新機能は `docs/product/ai-native-ux-principles.md` に従い、視覚的意図または試したい機能、確認 route または safe fixture、revert 方法だけを Issue に持たせればよい。baseline observation、変更仮説、比較 interaction、成功指標は任意である。AI chat、recommended-action card、guided workflow など特定 UI pattern は、唯一解を主張せず試してよい。
 
-discovery が複数の solution option を返した場合、候補を根拠、利用者価値、trade-off、Backstage / architecture 適合性、検証可能性、可逆性で比較する。メイン agent は現時点の暫定推奨を明示して delivery wave を選ぶが、有力な選外案と判断を変える追加証拠も Issue に残す。owner と Product Reviewer が alternatives を追跡できない状態で「best」と断定しない。不確実性が大きい場合は、複数案を本実装するのではなく、prototype / feature flag / discovery unit で安く比較してから収束する。
+discovery が複数の solution option を返し、戻しにくい判断がある場合は、候補を根拠、利用者価値、trade-off、Backstage / architecture 適合性、検証可能性、可逆性で比較する。メイン agent は現時点の暫定推奨を明示して delivery wave を選ぶ。可逆な UI / feature は、prototype や feature flag を強制せず標準導線へ直接出してよい。
 
 利用可能な候補または backlog item を、互いに独立して評価できる粒度で比較する。各候補について、次を一貫した粒度で記す。
 
@@ -42,7 +42,7 @@ discovery が複数の solution option を返した場合、候補を根拠、�
 - 受入条件と観測方法。各条件には、安全な fixture / 前提、利用者操作または API request、期待結果、自動検証、独立 reviewer の手動確認方法を持たせる。
 - 非対象、依存関係、主なリスク
 - 学習価値、緊急性、確信度、可逆性、実装規模
-- owner acceptance journey。製品所有者が preview または安全なローカル fixture で短時間に観測する操作と期待結果
+- 確認 route または safe fixture、短い変更意図、revert 方法
 - production / operability 影響。永続化、migration、認証、権限、Secret、外部依存、rollout、rollback、backup / restore、observability のうち relevant な項目
 
 IDP 利用者の UX と観測可能な利用者価値を、運用負荷の削減より優先する。運用改善は、それ自体が UX、安全性、または継続提供能力をどのように支えるかを示せるときに選ぶ。重要なトレードオフが残っても、今回の delivery wave と backlog を選び、順序と依存関係を明示する。実装しない discovery、maintenance、または対象なしの判断も有効な結果とする。
@@ -59,7 +59,7 @@ IDP 利用者の UX と観測可能な利用者価値を、運用負荷の削減
 - 受入条件と観測方法
 - 非対象、依存関係、リスク
 - initiative / delivery wave との関係、優先順位、選択または選外理由
-- owner acceptance と relevant な production / operability 影響
+- 確認 route と relevant な production / operability 影響
 
 価値は見込めるが重要な不確実性が残る候補は discovery Issue にする。調査すべき問い、集める証跡、調査後に下す判断を明記する。確認できた既存 label のみを使い、label を推測して作らない。
 
@@ -116,9 +116,10 @@ IDP 利用者の UX と観測可能な利用者価値を、運用負荷の削減
 | ---- | -------------------------- | --------------------------- | --------------------------- | ---------------- | ----------------- | ------------------- |
 | AC-1 | <利用者から観測できる条件> | <安全な sample data / 設定> | <UI 操作または API request> | <観測可能な結果> | <test 種別・対象> | <再現手順>          |
 
-#### Owner acceptance / operability
+#### 確認 route / operability
 
-- Owner acceptance journey:
+- 確認 route または safe fixture:
+- 変更意図と revert 方法:
 - Production / operability 影響:
 - Rollout / rollback:
 

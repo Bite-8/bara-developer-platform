@@ -8,7 +8,7 @@
 | ---- | --------------------------- | -------------------------- | ----------------------- | ------------------------ | ----------------------------- |
 | AC-1 | <!-- safe local fixture --> | <!-- UI 操作 / request --> | <!-- 観測可能な結果 --> | <!-- test と command --> | <!-- Pass / Fail / 未検証 --> |
 
-<!-- UI 変更は主要導線、backend/API 変更は正常系と主要な拒否・境界条件を含める。 -->
+<!-- UI / safe feature は確認 route・基本操作・revert 方法を含める。主要導線または安全意味を扱う UI、backend/API は正常系と主要な拒否・境界条件を含める。 -->
 
 ## 実行した検証
 
@@ -17,21 +17,21 @@
 - [ ] `yarn lint:all`
 - [ ] `yarn tsc:full`
 - [ ] `yarn test --watch=false`
-- [ ] `yarn test:e2e`（UI 導線を変更した場合）
-- [ ] 起動した app / backend に対して Review guide の対象操作を確認
+- [ ] `yarn test:e2e`（主要導線または approval / risk / permission / execute の意味を扱う場合）
+- [ ] 対象 test または route smoke と Review guide の基本操作を確認
 
-## Owner acceptance
+## 確認 route / 任意の人間フィードバック
 
 - Preview / safe local URL: <!-- 利用できない場合は理由 -->
-- 所有者が行う主要操作: <!-- 短時間で再現できる journey -->
-- 期待結果: <!-- 画面上の文言、response、状態 -->
+- 基本操作と期待結果: <!-- 画面上の文言、response、状態 -->
+- Revert 方法: <!-- 通常は PR revert。feature flag がある場合はその操作 -->
+- 人間のフィードバック: <!-- 任意。常時の merge 条件ではない -->
 
-## UI / UX 仮説（該当する場合）
+## UI / UX / feature の意図（該当する場合）
 
-- Baseline observation: <!-- 現在の journey で観測した事実 -->
-- 変更仮説と比較した interaction: <!-- 見た目の好みではなく改善理由 -->
-- 成功 / 失敗 / UNVERIFIED の観測: <!-- task success、time、迷い、理解、recoveryなど -->
-- 比較した有力案と暫定推奨の理由: <!-- Issueのoption comparisonを参照 -->
+- 意図: <!-- 視覚的魅力、洗練、Bara らしさ、interaction、または試したい機能 -->
+- 確認方法: <!-- route / fixture / targeted test。主要導線なら E2E -->
+- 次の学び: <!-- 任意。人間の反応や後続 iteration で確認したいこと -->
 
 ## Rollout / operability
 
@@ -48,7 +48,7 @@
 
 - PR head commit SHA: <!-- reviewer が確認する immutable SHA -->
 - Quality review comment / check / verdict: <!-- reviewed SHA付き PASS / FAIL / UNVERIFIED -->
-- Product review comment / check / verdict: <!-- 必要な場合。省略時は利用者挙動を変えない理由 -->
+- Product review advice: <!-- 任意。merge verdict ではない -->
 - Merge decision: <!-- main agent が同一 SHA の review と CI を確認後に記載 -->
 
 ## 残余リスク・未検証事項

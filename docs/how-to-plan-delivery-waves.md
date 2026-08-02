@@ -17,9 +17,9 @@ backlog の状態、担当、優先順位、PR 固有 evidence を repo 内 docs
 
 「UI を良くする」「AI 機能を作る」「本番で使えるようにする」のようなゴールを、最初から一つの実装へ結び付けません。次の順序で分解します。
 
-1. 誰のどの判断または作業を改善するかを一文にする。
+1. 誰のどの判断または作業を改善するか、またはどの UI / 機能をまず試したいかを一文にする。
 2. 現在の製品を代表的な利用者 journey で観測し、事実、仮説、未確認事項を分ける。
-3. UI / UX、frontend、backend / domain、data、integration、permission、安全性、validation、owner acceptance、operability の relevant な面を列挙する。
+3. UI / UX、frontend、backend / domain、data、integration、permission、安全性、validation、operability の relevant な面を列挙する。
 4. 独立して価値を観測できる最小の delivery unit、または実装判断を下す discovery unit に分ける。
 5. predecessor、successor、並行可能性、所有ファイルまたは worktree を dependency graph にする。
 6. 今回連続して完了させる最小の delivery wave と、backlog に残す候補を決める。
@@ -28,7 +28,7 @@ backlog の状態、担当、優先順位、PR 固有 evidence を repo 内 docs
 
 ## 調査を発散してから収束する
 
-解法に意味のある不確実性がある場合、メイン agent は異なる lens の product-explorer を並行起動します。各 explorer は最初は他の案を見ず、指定された利用者 journey、外部 benchmark、analysis method、Backstage feasibility などを独立に調べます。これにより、最初の案への anchoring と、一人の文脈に全ての観測が混ざることを避けます。
+可逆な UI / UX、画面露出、安全な新機能は、解法の唯一解を探すための発散を必要としません。メイン agent または implementer が一案を直接実装し、標準導線へ出して学びます。architecture、外部 integration、永続化、permission、外部副作用、または戻しにくい判断で、調査結果が実装方針を変え得る場合だけ、異なる lens の product-explorer を並行起動します。
 
 メイン agent は結果を統合し、重複を除いた原則 2〜4 案について次を比較します。
 
@@ -38,9 +38,9 @@ backlog の状態、担当、優先順位、PR 固有 evidence を repo 内 docs
 - trade-off、risk、Backstage compatibility
 - 最小の検証方法と revert 可能性
 
-そのうえで「現時点の暫定推奨」を選びます。多数決や agent 数ではなく、根拠の質、成果仮説、検証コストで判断します。選ばなかった有力案と、追加証拠によって判断が変わる条件も Issue に残し、owner と Product Reviewer が比較できるようにします。
+そのうえで「現時点の暫定推奨」を選びます。多数決や agent 数ではなく、根拠の質、成果仮説、検証コストで判断します。選ばなかった有力案と、追加証拠によって判断が変わる条件は、必要な高リスク判断にだけ Issue に残します。
 
-不確実性が大きく UI の差を文章だけで比較できない場合、複数の完成機能を同時に作らず、prototype、feature flag、Storybook、preview route などの安い比較 unit を先に選びます。軽微な bug、機械的変更、決定済み仕様では発散を省略し、その理由を記録します。
+不確実性が大きく戻しにくい UI の差を文章だけで比較できない場合は、複数の完成機能を同時に作らず、prototype、feature flag、Storybook、preview route などの安い比較 unit を先に選びます。可逆な UI / feature は、試作を preview に閉じ込める必要はない。
 
 ## 並行と順次を選ぶ
 
@@ -51,7 +51,7 @@ dependency graph 上で predecessor が完了した unit を ready unit と呼�
 - 個別の Issue、PR、受入条件、validation、fixed-SHA review、merge 判断を持てる。
 - 統合順序と競合時の owner が明確である。
 
-メイン agent は利用可能な subagent 枠まで ready unit を起動し、枠が空いたら次の ready unit を補充します。実装完了の全体待ち合わせはせず、head を固定できた PR から Quality / Product review と merge 評価を開始します。したがって、一つの wave の中で実装、review、修正、merge が異なる unit について同時に進行できます。
+メイン agent は利用可能な subagent 枠まで ready unit を起動し、枠が空いたら次の ready unit を補充します。実装完了の全体待ち合わせはせず、head を固定できた PR から Quality review と merge 評価を開始します。Product review は必要な助言であり、通常の UI / UX・新機能を待たせない。したがって、一つの wave の中で実装、review、修正、merge が異なる unit について同時に進行できます。
 
 schema → API → UI のような実依存がある場合だけ順次実施します。同じ delivery wave に含めてよいですが、predecessor が current base に merge され、その結果を確認してから successor を開始します。stacked branch の暗黙差分や未レビュー commit を後続 PR の前提にしません。
 
@@ -80,16 +80,16 @@ wave には次を記録します。
 - 含める delivery unit と各 Issue
 - dependency graph と parallel group / sequential order
 - unit ごとの ownership または worktree
-- owner acceptance journey
+- 確認 route または safe fixture と、必要な場合の人間フィードバック方法
 - production / operability 影響と relevant な rollout / rollback
 - wave の終了条件
 - 今回選外にした decision-ready 候補と理由
 
 既定件数は固定しません。各 unit を個別に検証でき、共通成果へ収束し、依存関係を説明できる最小の成果群を選びます。wave の途中で新しい候補が見つかった場合、blocking な安全性・correctness gap は wave に追加できます。それ以外は backlog に残し、無制限に scope を広げません。
 
-## Owner acceptance と operability
+## 確認方法と operability
 
-利用者向け変更には、製品所有者が preview URL または安全なローカル fixture で短時間に実行できる journey を一つ以上定義します。操作、期待する画面または response、失敗時に確認する値を PR の Review guide に記載します。自動 test や reviewer verdict は owner acceptance の代わりではなく、owner が全 test suite を再実行する必要もありません。
+UI / UX または安全な新機能には、基本操作を確認できる route または safe fixture、短い変更意図、revert 方法を記載します。人間の定性的フィードバックは得られるときに次の iteration へ反映するが、常時の owner acceptance は merge 条件にしません。
 
 production、永続データ、認証、権限、外部連携、migration、deployment に関係する unit は、変更に relevant な次の項目を受入条件または残余リスクに含めます。
 

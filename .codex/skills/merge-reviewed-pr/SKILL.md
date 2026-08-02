@@ -10,8 +10,8 @@ description: Verify that a Pull Request's current head has passing independent r
 ## merge 前に確認する
 
 1. PR URL / 番号、base branch、current head SHA、mergeability、required checks を取得する。
-2. PR body と関連 Issue の implementation evidence、quality review、必要な場合の product review を読む。必要な review が全て current head SHA を明記していることを確認する。旧 SHA の verdict や「docs-only」例外を流用しない。
-3. 各受入条件と必要な reviewer verdict が `PASS` であることを確認する。`FAIL`、重要な `UNVERIFIED`、blocking finding、CI failure、conflict、または head SHA の不一致があれば merge しない。
+2. PR body と関連 Issue の implementation evidence、quality review、必要に応じた product-review advice を読む。Quality review が current head SHA を明記していることを確認する。Product-review advice は、security / correctness finding を除き merge 条件にしない。旧 SHA の verdict や「docs-only」例外を流用しない。
+3. 各受入条件と Quality Reviewer の verdict が `PASS` であることを確認する。`FAIL`、重要な `UNVERIFIED`、blocking finding、CI failure、conflict、または head SHA の不一致があれば merge しない。
 4. PR body に Review guide、実行した検証、残余リスク、関連 Issue があり、SHA 付き reviewer verdict が GitHub comment / check またはメイン agent の現在の review wave に残ることを確認する。
 5. branch protection または merge queue がある場合は、その仕組みを使う。直接 push で base branch を更新しない。
 
@@ -22,7 +22,7 @@ description: Verify that a Pull Request's current head has passing independent r
 merge または保留の GitHub evidence には少なくとも次を残す。
 
 - PR URL、base branch、merge 対象の head SHA
-- Quality review と Product review の verdict、reviewed SHA、GitHub comment / check
+- Quality review の verdict、reviewed SHA、GitHub comment / check。Product-review advice があれば、その扱い
 - required checks と mergeability の確認結果
 - merge method と merge commit SHA、または保留・差し戻し理由
 
