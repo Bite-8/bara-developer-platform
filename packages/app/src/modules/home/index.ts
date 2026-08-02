@@ -1,0 +1,1 @@
+export { baraHomeModule } from './BaraHome';

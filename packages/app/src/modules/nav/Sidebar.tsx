@@ -31,7 +31,9 @@ export const SidebarContent = NavContentBlueprint.make({
             <SidebarSearchModal />
           </SidebarGroup>
           <SidebarDivider />
-          <SidebarGroup label="Menu" icon={<MenuIcon />}>
+          <SidebarGroup label="Bara" icon={<MenuIcon />}>
+            {nav.take('page:idp')}
+            <SidebarDivider />
             {nav.take('page:catalog')}
             {nav.take('page:scaffolder')}
             <SidebarDivider />

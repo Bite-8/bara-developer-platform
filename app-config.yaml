@@ -1,18 +1,18 @@
 app:
-  title: Scaffolded Backstage App
+  title: Bara Developer Platform
   baseUrl: http://localhost:3000
 
   # Enable all packages by default, this will discover packages from packages/app/package.json
   packages: all
 
   extensions:
-    # Configure the catalog index page to be the root page, this is normally mounted on /catalog
+    # Catalog remains available as a capability. The Bara home route owns /.
     - page:catalog:
         config:
-          path: /
+          path: /catalog
 
 organization:
-  name: My Company
+  name: Bara
 
 backend:
   # Used for enabling authentication, secret is shared by all backend plugins
@@ -145,5 +145,5 @@ permission:
 
 # see https://backstage.io/docs/ai/mcp-actions for more details
 mcpActions:
-  name: 'My Company Backstage' # defaults to "backstage"
-  description: 'Tools for managing your software catalog, creating new services from templates, and exploring your developer portal' # optional
+  name: 'Bara Developer Platform' # defaults to "backstage"
+  description: 'Tools for exploring developer control-plane context and safely planning changes from templates' # optional
