@@ -111,20 +111,20 @@ Project / Environment / Template の UI は、案 A として `plugins/idp` に�
 
 ### 4.1 構成要素
 
-| 要素                          | 公式ドキュメントから読み取れる役割                                                                 | このプロジェクトでの扱い                                  |
-| ----------------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| Backend                       | Backend instance。backend feature を配線する deployment 単位。                                     | Bara の API、domain service、integration も所有できる。   |
-| Backend Plugin                | 実際の backend 機能を提供する単位。Plugin 同士は独立しており、小さな microservice のように扱える。 | IDP の API / DB / 業務処理は `idp-backend` に置く。       |
-| Backend Module                | 既存 plugin が公開する extension point に機能を追加する単位。                                      | Scaffolder custom action などで使う。                     |
-| Core Services                 | logger、database、config、auth、scheduler、cache、discovery など、backend が提供する共通 service。 | 独自実装では coreServices へ依存する。                    |
-| Service Ref                   | Service を参照・注入するための識別子。                                                             | 独自 service を作る場合も型付き参照として扱う。           |
-| Extension Point               | Plugin が module に公開する拡張口。                                                                | 独自 plugin には必要に応じて公開する。                    |
-| Database Service              | Plugin ごとに scoped された knex client を取得する service。                                       | IDP の永続化は `idp-backend` の database service を使う。 |
-| HTTP Router                   | Plugin の HTTP route を `/api/<pluginId>` 配下に登録する service。                                 | IDP API の公開に使う。                                    |
-| Config                        | app-config を読む service。                                                                        | 環境差分や外部連携先は config に寄せる。                  |
-| Logger                        | ログ出力 service。                                                                                 | plugin 内で直接 logger 実装を持たない。                   |
-| Auth / UserInfo               | 認証・呼び出し元 user 情報を扱う service。                                                         | requester / approver の解決に使う。                       |
-| Scheduler / Cache / Discovery | 定期実行、キャッシュ、他 plugin/backend の発見。                                                   | 実行履歴集計や外部 API 連携で必要になった時に使う。       |
+| 要素                          | 公式ドキュメントから読み取れる役割                                                                 | このプロジェクトでの扱い                                |
+| ----------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Backend                       | Backend instance。backend feature を配線する deployment 単位。                                     | Bara の API、domain service、integration も所有できる。 |
+| Backend Plugin                | 実際の backend 機能を提供する単位。Plugin 同士は独立しており、小さな microservice のように扱える。 | 独立した lifecycle や再利用性がある IDP 機能に選ぶ。    |
+| Backend Module                | 既存 plugin が公開する extension point に機能を追加する単位。                                      | Scaffolder custom action などで使う。                   |
+| Core Services                 | logger、database、config、auth、scheduler、cache、discovery など、backend が提供する共通 service。 | 独自実装では coreServices へ依存する。                  |
+| Service Ref                   | Service を参照・注入するための識別子。                                                             | 独自 service を作る場合も型付き参照として扱う。         |
+| Extension Point               | Plugin が module に公開する拡張口。                                                                | 独自 plugin には必要に応じて公開する。                  |
+| Database Service              | Plugin ごとに scoped された knex client を取得する service。                                       | 実装の所有境界に対応する database service を使う。      |
+| HTTP Router                   | Plugin の HTTP route を `/api/<pluginId>` 配下に登録する service。                                 | IDP API の公開に使う。                                  |
+| Config                        | app-config を読む service。                                                                        | 環境差分や外部連携先は config に寄せる。                |
+| Logger                        | ログ出力 service。                                                                                 | plugin 内で直接 logger 実装を持たない。                 |
+| Auth / UserInfo               | 認証・呼び出し元 user 情報を扱う service。                                                         | requester / approver の解決に使う。                     |
+| Scheduler / Cache / Discovery | 定期実行、キャッシュ、他 plugin/backend の発見。                                                   | 実行履歴集計や外部 API 連携で必要になった時に使う。     |
 
 ### 4.2 Plugin 独立性とデータ境界
 
@@ -137,11 +137,11 @@ Project / Environment / Template の UI は、案 A として `plugins/idp` に�
 - 同じ transaction で扱うべきデータを複数 backend plugin に分断する。
 - 責務境界が異なる plugin 間に、暗黙の横断 transaction を作る。
 
-Plugin 間連携が必要な場合は、HTTP API、service、event、または plugin が公開する Extension Point などで連携する。同じ transaction で一貫性を保ちたい Project / Environment / Approval のようなデータは、同じ Backend Plugin に寄せる。
+Plugin 間連携が必要な場合は、HTTP API、service、event、または plugin が公開する Extension Point などで連携する。同じ transaction で一貫性を保ちたい Project / Environment / Approval のようなデータは、同じ Bara backend domain または Backend Plugin に寄せる。
 
 ### 4.3 このプロジェクトでの判断
 
-Project 管理、Environment 管理、Environment 作成申請、Approval、Execution History、Deployment Status はユースケース上の結合が強い。初期段階で `project-backend` / `environment-backend` / `approval-backend` に分けると、DB JOIN や distributed transaction が欲しくなりやすい。そのため、まずは `plugins/idp-backend` に集約する。
+Project 管理、Environment 管理、Environment 作成申請、Approval、Execution History、Deployment Status はユースケース上の結合が強い。初期段階で `project-backend` / `environment-backend` / `approval-backend` に分けると、DB JOIN や distributed transaction が欲しくなりやすい。そのため、まずは同じ Bara backend domain に集約し、独立性や再利用性が明確になったときに backend plugin へ分離する。
 
 既存 Core Plugin に自分で Extension Point を追加することは、「既存 plugin が公開している拡張口を使う」のではなく「Core Plugin の改造」として扱う。必要な拡張口がない場合は、独自 plugin 側に責務を移すか、公式 Backstage へ提案・PR することを検討する。
 
