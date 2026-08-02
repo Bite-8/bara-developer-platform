@@ -25,26 +25,29 @@ const enterApp = async (page: Page) => {
 
   await expect(
     page.getByRole('navigation').getByRole('link', {
-      name: 'Catalog',
+      name: 'IDP',
       exact: true,
     }),
   ).toBeVisible();
 };
 
-test('App should render the welcome page', async ({ page }) => {
-  await page.goto('/');
-
-  const enterButton = page.getByRole('button', { name: 'Enter' });
-  await expect(enterButton).toBeVisible();
-  await enterButton.click();
+test('App should open Bara control-plane entry after guest entry', async ({
+  page,
+}) => {
+  await enterApp(page);
 
   const nav = page.getByRole('navigation');
   await expect(
-    nav.getByRole('link', { name: 'Catalog', exact: true }),
+    nav.getByRole('link', { name: 'IDP', exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole('link', { name: 'APIs', exact: true }),
+    page.getByRole('heading', { name: 'Bara IDP', exact: true }),
   ).toBeVisible();
+  await expect(
+    nav.getByRole('link', { name: 'Catalog', exact: true }),
+  ).toBeVisible();
+  await nav.getByRole('link', { name: 'Catalog', exact: true }).click();
+  await expect(page).toHaveURL(/\/catalog$/);
 });
 
 test('IDP Project detail should show recommended action before backend control context and record a dry-run', async ({
