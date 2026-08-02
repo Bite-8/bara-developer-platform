@@ -1,4 +1,5 @@
 import { PropsWithChildren, useEffect, useMemo, useState } from 'react';
+import { Entity, stringifyEntityRef } from '@backstage/catalog-model';
 import {
   Link,
   Route,
@@ -12,6 +13,7 @@ import {
   fetchApiRef,
   useApi,
 } from '@backstage/core-plugin-api';
+import { CatalogApi, catalogApiRef } from '@backstage/plugin-catalog-react';
 import {
   Box,
   Button,
@@ -166,6 +168,11 @@ const useIdpData = () => {
 };
 
 type IdpDataProps = ReturnType<typeof useIdpData>;
+type CatalogProjectsApi = Pick<CatalogApi, 'getEntities'>;
+type CatalogProjectListState =
+  | { status: 'loading'; projects: Entity[]; error?: undefined }
+  | { status: 'success'; projects: Entity[]; error?: undefined }
+  | { status: 'error'; projects: Entity[]; error: Error };
 
 type StatusChipProps = { status?: string };
 export const StatusChip = ({ status = 'unknown' }: StatusChipProps) => {
@@ -268,6 +275,78 @@ const latest = <T extends { updatedAt?: string; createdAt: string }>(
   [...items].sort((a, b) =>
     (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt),
   );
+const catalogProjectRef = (entity: Entity) => stringifyEntityRef(entity);
+const catalogProjectTitle = (entity: Entity) =>
+  entity.metadata.title ?? entity.metadata.name;
+const catalogProjectOwner = (entity: Entity) =>
+  typeof entity.spec?.owner === 'string' ? entity.spec.owner : 'owner pending';
+const catalogProjectDescription = (entity: Entity) =>
+  entity.metadata.description ??
+  'Catalog Project context is available for this entity.';
+const catalogEntityRoute = (entity: Entity) =>
+  `/catalog/${
+    entity.metadata.namespace ?? 'default'
+  }/${entity.kind.toLocaleLowerCase()}/${entity.metadata.name}`;
+const catalogProjectControlRoute = (
+  entity: Entity,
+  fixtureProjects: IdpProject[],
+) => {
+  const ref = catalogProjectRef(entity);
+  const matchingFixture = fixtureProjects.find(
+    project => projectControlRef(project) === ref,
+  );
+
+  return matchingFixture
+    ? `/idp/projects/${matchingFixture.id}`
+    : catalogEntityRoute(entity);
+};
+
+const useCatalogProjects = (
+  catalogApi: CatalogProjectsApi,
+): [CatalogProjectListState, () => void] => {
+  const [reloadKey, setReloadKey] = useState(0);
+  const [state, setState] = useState<CatalogProjectListState>({
+    status: 'loading',
+    projects: [],
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setState({ status: 'loading', projects: [] });
+    catalogApi
+      .getEntities({
+        filter: { kind: 'System' },
+      })
+      .then(response => {
+        if (cancelled) {
+          return;
+        }
+        setState({
+          status: 'success',
+          projects: [...response.items].sort((a, b) =>
+            catalogProjectTitle(a).localeCompare(catalogProjectTitle(b)),
+          ),
+        });
+      })
+      .catch(error => {
+        if (cancelled) {
+          return;
+        }
+        setState({
+          status: 'error',
+          projects: [],
+          error: error instanceof Error ? error : new Error(String(error)),
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [catalogApi, reloadKey]);
+
+  return [state, () => setReloadKey(key => key + 1)];
+};
 
 const IdpChrome = ({ children }: PropsWithChildren<{}>) => {
   const classes = useStyles();
@@ -1023,12 +1102,155 @@ export const ProjectControlContextSection = ({
   );
 };
 
+const CatalogProjectEntry = ({
+  entity,
+  projects,
+}: {
+  entity: Entity;
+  projects: IdpProject[];
+}) => {
+  const classes = useStyles();
+  const ref = catalogProjectRef(entity);
+  const route = catalogProjectControlRoute(entity, projects);
+  const opensLocalControlContext = route.startsWith('/idp/projects/');
+
+  return (
+    <Box className={classes.miniCard}>
+      <Box className={classes.titleRow}>
+        <Typography variant="h6">{catalogProjectTitle(entity)}</Typography>
+        <Chip
+          size="small"
+          className={classes.chip}
+          label={
+            opensLocalControlContext ? 'Control context' : 'Catalog entity'
+          }
+        />
+      </Box>
+      <Typography className={classes.muted}>
+        {catalogProjectDescription(entity)}
+      </Typography>
+      <Box mt={1.5} className={classes.metaGrid}>
+        <Chip size="small" className={classes.chip} label={ref} />
+        <Chip
+          size="small"
+          className={classes.chip}
+          label={catalogProjectOwner(entity)}
+        />
+      </Box>
+      <Box mt={2}>
+        <Button component={Link} to={route} variant="outlined">
+          {opensLocalControlContext
+            ? 'Open Project control context'
+            : 'Open Catalog entity'}
+        </Button>
+      </Box>
+    </Box>
+  );
+};
+
+export const CatalogProjectContextListContent = ({
+  projects,
+  catalogApi,
+}: {
+  projects: IdpProject[];
+  catalogApi: CatalogProjectsApi;
+}) => {
+  const classes = useStyles();
+  const [state, retry] = useCatalogProjects(catalogApi);
+
+  return (
+    <SectionCard title="Catalog-backed Project context">
+      <Box className={classes.cardList}>
+        <Box>
+          <Typography>
+            Source: Backstage Catalog `System` entities visible to the current
+            identity.
+          </Typography>
+          <Typography className={classes.muted}>
+            This read-only list is separate from the safe local fixture
+            portfolio below. Fixture cards are examples only and are not
+            promoted to authoritative Catalog, Git, or runtime status.
+          </Typography>
+        </Box>
+        {state.status === 'loading' && (
+          <Box className={classes.miniCard}>
+            <Typography variant="h6">Loading Catalog Projects...</Typography>
+            <Typography className={classes.muted}>
+              Reading Catalog entries with the existing Backstage frontend API.
+            </Typography>
+          </Box>
+        )}
+        {state.status === 'error' && (
+          <Box className={classes.miniCard}>
+            <Typography variant="h6">
+              Catalog Project context could not be loaded.
+            </Typography>
+            <Typography className={classes.muted}>
+              {state.error.message}
+            </Typography>
+            <Typography className={classes.muted}>
+              Keep using the fixture overview for exploration only, or retry the
+              Catalog read when the service is available.
+            </Typography>
+            <Box mt={2}>
+              <Button variant="outlined" onClick={retry}>
+                Retry Catalog read
+              </Button>
+            </Box>
+          </Box>
+        )}
+        {state.status === 'success' && state.projects.length === 0 && (
+          <Box className={classes.miniCard}>
+            <Typography variant="h6">
+              No Catalog Project entries are visible.
+            </Typography>
+            <Typography className={classes.muted}>
+              The fixture overview remains a safe local example, not a
+              substitute for Catalog/Git desired state. Use the Catalog to add
+              or request access to Project `System` entities.
+            </Typography>
+            <Box mt={2}>
+              <Button component={Link} to="/catalog" variant="outlined">
+                Open Catalog
+              </Button>
+            </Box>
+          </Box>
+        )}
+        {state.status === 'success' &&
+          state.projects.map(entity => (
+            <CatalogProjectEntry
+              key={catalogProjectRef(entity)}
+              entity={entity}
+              projects={projects}
+            />
+          ))}
+      </Box>
+    </SectionCard>
+  );
+};
+
+export const CatalogProjectContextList = ({
+  projects,
+}: {
+  projects: IdpProject[];
+}) => {
+  const catalogApi = useApi(catalogApiRef);
+
+  return (
+    <CatalogProjectContextListContent
+      projects={projects}
+      catalogApi={catalogApi}
+    />
+  );
+};
+
 export const IdpDashboardPage = ({
   projects,
   environments,
   templates,
   operationLogs,
-}: IdpDataProps) => {
+  catalogApi,
+}: IdpDataProps & { catalogApi?: CatalogProjectsApi }) => {
   const classes = useStyles();
   const availableTemplates = templates.filter(t => t.status === 'available');
   return (
@@ -1060,6 +1282,16 @@ export const IdpDashboardPage = ({
           </Button>
         </Hero>
         <Grid container spacing={3}>
+          <Grid item xs={12}>
+            {catalogApi ? (
+              <CatalogProjectContextListContent
+                projects={projects}
+                catalogApi={catalogApi}
+              />
+            ) : (
+              <CatalogProjectContextList projects={projects} />
+            )}
+          </Grid>
           <Grid item xs={12} md={4}>
             <SummaryCard
               title="Projects"
