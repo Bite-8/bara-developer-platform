@@ -283,10 +283,10 @@ const catalogProjectOwner = (entity: Entity) =>
 const catalogProjectDescription = (entity: Entity) =>
   entity.metadata.description ??
   'Catalog Project context is available for this entity.';
-const catalogEntityRoute = (entity: Entity) =>
-  `/catalog/${
-    entity.metadata.namespace ?? 'default'
-  }/${entity.kind.toLocaleLowerCase()}/${entity.metadata.name}`;
+const catalogProjectIdpRoute = (entity: Entity) =>
+  `/idp/catalog-project/${encodeURIComponent(
+    entity.metadata.namespace ?? 'default',
+  )}/${encodeURIComponent(entity.metadata.name)}`;
 const catalogProjectControlRoute = (
   entity: Entity,
   fixtureProjects: IdpProject[],
@@ -298,7 +298,15 @@ const catalogProjectControlRoute = (
 
   return matchingFixture
     ? `/idp/projects/${matchingFixture.id}`
-    : catalogEntityRoute(entity);
+    : catalogProjectIdpRoute(entity);
+};
+const catalogEntityRouteFromRef = (projectRef: string) => {
+  const match = projectRef.match(/^([^:]+):([^/]+)\/(.+)$/);
+  if (!match) {
+    return '/catalog';
+  }
+  const [, kind, namespace, name] = match;
+  return `/catalog/${namespace}/${kind.toLocaleLowerCase()}/${name}`;
 };
 
 const useCatalogProjects = (
@@ -919,12 +927,12 @@ export const ProjectControlContextSection = ({
   projectRef: string;
   controlContextApi: ControlContextApi;
 }) => {
-  const classes = useStyles();
   const [context, setContext] = useState<IdpProjectControlContext>();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>(
     'loading',
   );
   const [errorMessage, setErrorMessage] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -952,7 +960,7 @@ export const ProjectControlContextSection = ({
     return () => {
       active = false;
     };
-  }, [controlContextApi, projectRef]);
+  }, [controlContextApi, projectRef, reloadKey]);
 
   return (
     <>
@@ -966,139 +974,214 @@ export const ProjectControlContextSection = ({
         />
       </Grid>
       <Grid item xs={12}>
-        <SectionCard title="Backend control context">
-          {status === 'loading' && (
-            <Typography className={classes.muted}>
-              Loading backend control context...
-            </Typography>
-          )}
-          {status === 'error' && (
-            <Box>
-              <StatusChip status="error" />
-              <Typography style={{ marginTop: 12 }}>
-                Backend control context could not be loaded.
-              </Typography>
-              <Typography className={classes.muted}>{errorMessage}</Typography>
-            </Box>
-          )}
-          {status === 'success' && context && (
-            <Box className={classes.cardList}>
-              <Box className={classes.contextGrid}>
-                <Box className={classes.miniCard}>
-                  <Typography variant="subtitle2" className={classes.muted}>
-                    Project ref
-                  </Typography>
-                  <Typography variant="h6">{context.projectRef}</Typography>
-                  <Typography className={classes.muted}>
-                    Owner:{' '}
-                    {context.project.ownerRefs.length
-                      ? context.project.ownerRefs.join(', ')
-                      : 'Catalog owner not resolved'}
-                  </Typography>
-                </Box>
-                <Box className={classes.miniCard}>
-                  <Typography variant="subtitle2" className={classes.muted}>
-                    Desired state source
-                  </Typography>
-                  <Typography variant="h6">
-                    {context.desiredState.authoritativeSource}
-                  </Typography>
-                  <Typography className={classes.muted}>
-                    IDP backend desired-state store:{' '}
-                    {context.desiredState
-                      .idpBackendStoresAuthoritativeDesiredState
-                      ? 'enabled'
-                      : 'disabled'}
-                  </Typography>
-                </Box>
-                <Box className={classes.miniCard}>
-                  <Typography variant="subtitle2" className={classes.muted}>
-                    Latest plan
-                  </Typography>
-                  {context.latestPlan ? (
-                    <>
-                      <Typography variant="h6">
-                        {context.latestPlan.planRef}
-                      </Typography>
-                      <Typography className={classes.muted}>
-                        {context.latestPlan.status} ·{' '}
-                        {context.latestPlan.expectedChangeSummary}
-                      </Typography>
-                    </>
-                  ) : (
-                    <Typography className={classes.muted}>
-                      No latest plan is recorded for this Project yet.
-                    </Typography>
-                  )}
-                </Box>
-                <Box className={classes.miniCard}>
-                  <Typography variant="subtitle2" className={classes.muted}>
-                    Latest action run
-                  </Typography>
-                  {context.latestActionRun ? (
-                    <>
-                      <Typography variant="h6">
-                        {context.latestActionRun.actionRunRef}
-                      </Typography>
-                      <Typography className={classes.muted}>
-                        {context.latestActionRun.mode} ·{' '}
-                        {context.latestActionRun.status}
-                      </Typography>
-                    </>
-                  ) : (
-                    <Typography className={classes.muted}>
-                      No latest action run is recorded for this Project yet.
-                    </Typography>
-                  )}
-                </Box>
-              </Box>
-
-              <Box>
-                <Typography variant="h6">Related Environment refs</Typography>
-                <RefChips
-                  refs={context.environmentRefs}
-                  empty="No related Environment refs are returned by backend control context."
-                />
-              </Box>
-              <Box>
-                <Typography variant="h6">Related Template refs</Typography>
-                <RefChips
-                  refs={context.templateRefs}
-                  empty="No related Template refs are returned by backend control context."
-                />
-              </Box>
-              <Box>
-                <Typography variant="h6">Approval summary</Typography>
-                <Typography className={classes.muted}>
-                  These values summarize whether future actions are expected to
-                  need approval. They are not permission enforcement or
-                  completed approval records.
-                </Typography>
-                <Box mt={1} className={classes.metaGrid}>
-                  {actionDecisionKeys.map(action => (
-                    <Chip
-                      key={action}
-                      size="small"
-                      className={classes.chip}
-                      label={`${actionLabels[action]}: ${context.allowedActions[action]}`}
-                    />
-                  ))}
-                </Box>
-                {context.allowedActions.reasons.map(reason => (
-                  <Typography key={reason} className={classes.muted}>
-                    {reason}
-                  </Typography>
-                ))}
-              </Box>
-              <Box>
-                <Typography variant="h6">Recent runtime logs</Typography>
-                <ControlLogList logs={context.recentOperationLogs} />
-              </Box>
-            </Box>
-          )}
-        </SectionCard>
+        <BackendControlContextPanel
+          projectRef={projectRef}
+          status={status}
+          context={context}
+          errorMessage={errorMessage}
+          catalogRoute={catalogEntityRouteFromRef(projectRef)}
+          onRetry={() => setReloadKey(key => key + 1)}
+        />
       </Grid>
     </>
+  );
+};
+
+const BackendControlContextPanel = ({
+  projectRef,
+  status,
+  context,
+  errorMessage,
+  catalogRoute,
+  onRetry,
+}: {
+  projectRef: string;
+  status: 'loading' | 'success' | 'error';
+  context?: IdpProjectControlContext;
+  errorMessage: string;
+  catalogRoute: string;
+  onRetry: () => void;
+}) => {
+  const classes = useStyles();
+  const latestLog = context?.recentOperationLogs[0];
+
+  return (
+    <SectionCard title="Backend control context">
+      <Box className={classes.cardList}>
+        <Box>
+          <Typography>
+            Source: IDP backend control-context API for canonical Catalog
+            Project ref.
+          </Typography>
+          <Typography className={classes.muted}>
+            Requested Project ref: {projectRef}. This read-only view reports
+            Catalog/backend context only and does not merge local fixture
+            Project state.
+          </Typography>
+        </Box>
+        {status === 'loading' && (
+          <Typography className={classes.muted}>
+            Loading backend control context...
+          </Typography>
+        )}
+        {status === 'error' && (
+          <Box className={classes.miniCard}>
+            <StatusChip status="error" />
+            <Typography style={{ marginTop: 12 }}>
+              Backend control context could not be loaded.
+            </Typography>
+            <Typography className={classes.muted}>{errorMessage}</Typography>
+            <Typography className={classes.muted}>
+              Retry the backend read, or open the canonical Catalog entity to
+              inspect the source entity. Local fixture cards are not treated as
+              authoritative recovery data.
+            </Typography>
+            <Box mt={2} className={classes.metaGrid}>
+              <Button variant="outlined" onClick={onRetry}>
+                Retry backend read
+              </Button>
+              <Button component={Link} to={catalogRoute} variant="outlined">
+                Open Catalog entity
+              </Button>
+            </Box>
+          </Box>
+        )}
+        {status === 'success' && context && (
+          <>
+            <Box className={classes.contextGrid}>
+              <Box className={classes.miniCard}>
+                <Typography variant="subtitle2" className={classes.muted}>
+                  Project ref
+                </Typography>
+                <Typography variant="h6">{context.projectRef}</Typography>
+                <Typography className={classes.muted}>
+                  Owner:{' '}
+                  {context.project.ownerRefs.length
+                    ? context.project.ownerRefs.join(', ')
+                    : 'Catalog owner not resolved'}
+                </Typography>
+              </Box>
+              <Box className={classes.miniCard}>
+                <Typography variant="subtitle2" className={classes.muted}>
+                  Desired state source
+                </Typography>
+                <Typography variant="h6">
+                  {context.desiredState.authoritativeSource}
+                </Typography>
+                <Typography className={classes.muted}>
+                  IDP backend desired-state store:{' '}
+                  {context.desiredState
+                    .idpBackendStoresAuthoritativeDesiredState
+                    ? 'enabled'
+                    : 'disabled'}
+                </Typography>
+              </Box>
+              <Box className={classes.miniCard}>
+                <Typography variant="subtitle2" className={classes.muted}>
+                  Latest plan
+                </Typography>
+                {context.latestPlan ? (
+                  <>
+                    <Typography variant="h6">
+                      {context.latestPlan.planRef}
+                    </Typography>
+                    <Typography className={classes.muted}>
+                      {context.latestPlan.status} ·{' '}
+                      {context.latestPlan.expectedChangeSummary}
+                    </Typography>
+                  </>
+                ) : (
+                  <Typography className={classes.muted}>
+                    No latest plan is recorded for this Project yet.
+                  </Typography>
+                )}
+              </Box>
+              <Box className={classes.miniCard}>
+                <Typography variant="subtitle2" className={classes.muted}>
+                  Latest action run
+                </Typography>
+                {context.latestActionRun ? (
+                  <>
+                    <Typography variant="h6">
+                      {context.latestActionRun.actionRunRef}
+                    </Typography>
+                    <Typography className={classes.muted}>
+                      {context.latestActionRun.mode} ·{' '}
+                      {context.latestActionRun.status}
+                    </Typography>
+                  </>
+                ) : (
+                  <Typography className={classes.muted}>
+                    No latest action run is recorded for this Project yet.
+                  </Typography>
+                )}
+              </Box>
+              <Box className={classes.miniCard}>
+                <Typography variant="subtitle2" className={classes.muted}>
+                  Latest runtime log
+                </Typography>
+                {latestLog ? (
+                  <>
+                    <Typography variant="h6">
+                      {latestLog.operationLogRef}
+                    </Typography>
+                    <Typography className={classes.muted}>
+                      {latestLog.status} · {latestLog.eventType}
+                    </Typography>
+                  </>
+                ) : (
+                  <Typography className={classes.muted}>
+                    No runtime log has been recorded for this Project yet.
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+
+            <Box>
+              <Typography variant="h6">Related Environment refs</Typography>
+              <RefChips
+                refs={context.environmentRefs}
+                empty="No related Environment refs are returned by backend control context."
+              />
+            </Box>
+            <Box>
+              <Typography variant="h6">Related Template refs</Typography>
+              <RefChips
+                refs={context.templateRefs}
+                empty="No related Template refs are returned by backend control context."
+              />
+            </Box>
+            <Box>
+              <Typography variant="h6">Approval summary</Typography>
+              <Typography className={classes.muted}>
+                These values summarize whether future actions are expected to
+                need approval. They are not permission enforcement or completed
+                approval records.
+              </Typography>
+              <Box mt={1} className={classes.metaGrid}>
+                {actionDecisionKeys.map(action => (
+                  <Chip
+                    key={action}
+                    size="small"
+                    className={classes.chip}
+                    label={`${actionLabels[action]}: ${context.allowedActions[action]}`}
+                  />
+                ))}
+              </Box>
+              {context.allowedActions.reasons.map(reason => (
+                <Typography key={reason} className={classes.muted}>
+                  {reason}
+                </Typography>
+              ))}
+            </Box>
+            <Box>
+              <Typography variant="h6">Recent runtime logs</Typography>
+              <ControlLogList logs={context.recentOperationLogs} />
+            </Box>
+          </>
+        )}
+      </Box>
+    </SectionCard>
   );
 };
 
@@ -1113,18 +1196,15 @@ const CatalogProjectEntry = ({
   const ref = catalogProjectRef(entity);
   const route = catalogProjectControlRoute(entity, projects);
   const opensLocalControlContext = route.startsWith('/idp/projects/');
+  const routeLabel = opensLocalControlContext
+    ? 'Fixture-matched control context'
+    : 'Catalog control context';
 
   return (
     <Box className={classes.miniCard}>
       <Box className={classes.titleRow}>
         <Typography variant="h6">{catalogProjectTitle(entity)}</Typography>
-        <Chip
-          size="small"
-          className={classes.chip}
-          label={
-            opensLocalControlContext ? 'Control context' : 'Catalog entity'
-          }
-        />
+        <Chip size="small" className={classes.chip} label={routeLabel} />
       </Box>
       <Typography className={classes.muted}>
         {catalogProjectDescription(entity)}
@@ -1139,9 +1219,7 @@ const CatalogProjectEntry = ({
       </Box>
       <Box mt={2}>
         <Button component={Link} to={route} variant="outlined">
-          {opensLocalControlContext
-            ? 'Open Project control context'
-            : 'Open Catalog entity'}
+          Open Project control context
         </Button>
       </Box>
     </Box>
@@ -1566,6 +1644,110 @@ export const ProjectDetailPage = (props: IdpDataProps) => {
   return (
     <ProjectDetailContent {...props} controlContextApi={controlContextApi} />
   );
+};
+
+export const CatalogProjectDetailContent = ({
+  controlContextApi,
+}: {
+  controlContextApi: ControlContextApi;
+}) => {
+  const classes = useStyles();
+  const { namespace = 'default', name = '' } = useParams();
+  const projectRef = `system:${namespace}/${name}`;
+  const catalogRoute = `/catalog/${namespace}/system/${name}`;
+  const [context, setContext] = useState<IdpProjectControlContext>();
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>(
+    'loading',
+  );
+  const [errorMessage, setErrorMessage] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    setStatus('loading');
+    setErrorMessage('');
+    setContext(undefined);
+
+    controlContextApi
+      .getProjectControlContext(projectRef)
+      .then(nextContext => {
+        if (active) {
+          setContext(nextContext);
+          setStatus('success');
+        }
+      })
+      .catch(error => {
+        if (active) {
+          setStatus('error');
+          setErrorMessage(
+            error instanceof Error ? error.message : 'Unknown IDP API error',
+          );
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [controlContextApi, projectRef, reloadKey]);
+
+  return (
+    <IdpChrome>
+      <Header
+        title={context?.project.title ?? projectRef}
+        subtitle="Read-only Catalog Project control context from the IDP backend"
+      />
+      <Content>
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <SectionCard
+              title="Catalog Project"
+              action={
+                <Button component={Link} to={catalogRoute} variant="outlined">
+                  Open Catalog entity
+                </Button>
+              }
+            >
+              <Box className={classes.cardList}>
+                <Box>
+                  <Typography variant="h6">{projectRef}</Typography>
+                  <Typography className={classes.muted}>
+                    Source: canonical Backstage Catalog `System` entity and IDP
+                    backend control-context API. This route does not create or
+                    merge a local fixture Project.
+                  </Typography>
+                </Box>
+                <Box className={classes.metaGrid}>
+                  <Chip size="small" className={classes.chip} label="system" />
+                  <Chip
+                    size="small"
+                    className={classes.chip}
+                    label={namespace}
+                  />
+                  <Chip size="small" className={classes.chip} label={name} />
+                </Box>
+              </Box>
+            </SectionCard>
+          </Grid>
+          <Grid item xs={12}>
+            <BackendControlContextPanel
+              projectRef={projectRef}
+              status={status}
+              context={context}
+              errorMessage={errorMessage}
+              catalogRoute={catalogRoute}
+              onRetry={() => setReloadKey(key => key + 1)}
+            />
+          </Grid>
+        </Grid>
+      </Content>
+    </IdpChrome>
+  );
+};
+
+export const CatalogProjectDetailPage = () => {
+  const controlContextApi = useBackendControlContextApi();
+
+  return <CatalogProjectDetailContent controlContextApi={controlContextApi} />;
 };
 
 export const EnvironmentListPage = ({
@@ -2270,3 +2452,9 @@ export const IdpProjectDetailRoot = () => {
     </Page>
   );
 };
+
+export const CatalogProjectDetailRoot = () => (
+  <Page themeId="tool">
+    <CatalogProjectDetailPage />
+  </Page>
+);

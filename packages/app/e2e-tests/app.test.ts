@@ -61,16 +61,33 @@ test('App should open Bara control-plane entry after guest entry', async ({
     ),
   ).toBeVisible();
   await expect(page.getByText('system:default/examples')).toBeVisible();
+  await expect(page.getByText('system:default/payment-platform')).toBeVisible();
   await expect(
-    page.getByRole('button', { name: 'Open Project control context' }),
+    page.locator('a[href="/idp/projects/examples"]').first(),
   ).toHaveAttribute('href', '/idp/projects/examples');
+  await expect(
+    page.locator('a[href="/idp/catalog-project/default/payment-platform"]'),
+  ).toHaveAttribute('href', '/idp/catalog-project/default/payment-platform');
   await expect(
     page.getByRole('button', { name: 'Open Project context' }),
   ).toHaveAttribute('href', '/idp/projects/examples');
   await expect(page.getByText('Connected', { exact: true })).toHaveCount(0);
   await page
-    .getByRole('button', { name: 'Open Project control context' })
+    .locator('a[href="/idp/catalog-project/default/payment-platform"]')
     .click();
+  await expect(page).toHaveURL(
+    /\/idp\/catalog-project\/default\/payment-platform$/,
+  );
+  await expect(
+    page.getByRole('heading', { name: 'Backend control context' }),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator('header')
+      .getByRole('heading', { name: 'system:default/payment-platform' }),
+  ).toBeVisible();
+  await page.goto('/idp');
+  await page.locator('a[href="/idp/projects/examples"]').first().click();
   await expect(page).toHaveURL(/\/idp\/projects\/examples$/);
   await expect(
     page.getByRole('heading', { name: 'Backend control context' }),
