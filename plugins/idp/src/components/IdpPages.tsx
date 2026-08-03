@@ -987,7 +987,7 @@ export const ProjectControlContextSection = ({
   );
 };
 
-const BackendControlContextPanel = ({
+function BackendControlContextPanel({
   projectRef,
   status,
   context,
@@ -1001,7 +1001,7 @@ const BackendControlContextPanel = ({
   errorMessage: string;
   catalogRoute: string;
   onRetry: () => void;
-}) => {
+}) {
   const classes = useStyles();
   const latestLog = context?.recentOperationLogs[0];
 
@@ -1183,7 +1183,7 @@ const BackendControlContextPanel = ({
       </Box>
     </SectionCard>
   );
-};
+}
 
 const CatalogProjectEntry = ({
   entity,
