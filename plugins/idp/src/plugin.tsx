@@ -29,5 +29,15 @@ export const idpPlugin = createFrontendPlugin({
           import('./components/IdpPages').then(m => <m.IdpProjectDetailRoot />),
       },
     }),
+    PageBlueprint.make({
+      name: 'catalog-project-detail',
+      params: {
+        path: '/idp/catalog-project/:namespace/:name',
+        loader: async () =>
+          import('./components/IdpPages').then(m => (
+            <m.CatalogProjectDetailRoot />
+          )),
+      },
+    }),
   ],
 });

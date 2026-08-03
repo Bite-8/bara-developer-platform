@@ -4,6 +4,7 @@ import { Route, Routes } from 'react-router-dom';
 import { Entity } from '@backstage/catalog-model';
 
 import {
+  CatalogProjectDetailContent,
   CatalogProjectContextListContent,
   EnvironmentDetailPage,
   IdpDashboardPage,
@@ -317,7 +318,7 @@ describe('IdpDashboardPage', () => {
     ).toBe('/idp/projects/examples');
   });
 
-  it('sends an unmatched Catalog Project to its canonical Catalog entity route', async () => {
+  it('sends an unmatched Catalog Project to its canonical IDP control-context route', async () => {
     const catalogApi = catalogApiWith(
       Promise.resolve({
         items: [
@@ -345,9 +346,9 @@ describe('IdpDashboardPage', () => {
     });
     expect(
       screen
-        .getByRole('button', { name: 'Open Catalog entity' })
+        .getByRole('button', { name: 'Open Project control context' })
         .getAttribute('href'),
-    ).toBe('/catalog/default/system/payments');
+    ).toBe('/idp/catalog-project/default/payments');
   });
 
   it('shows a safe loading state before Catalog Projects resolve', async () => {
@@ -446,6 +447,127 @@ const renderProjectDetail = async ({
 
   return { controlContextApi };
 };
+
+const renderCatalogProjectDetail = async ({
+  route = '/idp/catalog-project/default/payment-platform',
+  contextPromise = Promise.resolve(
+    controlContext({
+      projectRef: 'system:default/payment-platform',
+      project: {
+        title: 'Payment Platform',
+        ownerRefs: ['group:default/platform'],
+        catalogEntityRef: 'system:default/payment-platform',
+      },
+      environmentRefs: ['resource:default/payment-dev'],
+      templateRefs: ['template:default/payment-service-template'],
+      recentOperationLogs: [],
+      latestPlan: undefined,
+      latestActionRun: undefined,
+    }),
+  ),
+}: {
+  route?: string;
+  contextPromise?: Promise<IdpProjectControlContext>;
+} = {}) => {
+  const controlContextApi = {
+    getProjectControlContext: jest.fn().mockReturnValue(contextPromise),
+    createTemplatePlanPreview: jest.fn(),
+    createDryRunActionRun: jest.fn(),
+  };
+
+  await renderInTestApp(
+    <Routes>
+      <Route
+        path="/idp/catalog-project/:namespace/:name"
+        element={
+          <CatalogProjectDetailContent controlContextApi={controlContextApi} />
+        }
+      />
+    </Routes>,
+    { routeEntries: [route] },
+  );
+
+  return { controlContextApi };
+};
+
+describe('CatalogProjectDetailContent', () => {
+  it('reads unmatched Catalog Project backend context by canonical ref without local fixture state', async () => {
+    const { controlContextApi } = await renderCatalogProjectDetail();
+
+    await waitFor(() => {
+      expect(screen.getByText('Payment Platform')).toBeTruthy();
+    });
+
+    expect(controlContextApi.getProjectControlContext).toHaveBeenCalledWith(
+      'system:default/payment-platform',
+    );
+    expect(
+      screen.getAllByText('system:default/payment-platform').length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getByText(/Source: canonical Backstage Catalog `System` entity/),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/does not create or merge a local fixture Project/),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/Source: IDP backend control-context API/),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        (_, element) =>
+          element?.textContent === 'Owner: group:default/platform',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText('catalog-and-git')).toBeTruthy();
+    expect(screen.getByText('resource:default/payment-dev')).toBeTruthy();
+    expect(
+      screen.getByText('template:default/payment-service-template'),
+    ).toBeTruthy();
+    expect(
+      screen.getByText('No latest plan is recorded for this Project yet.'),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        'No latest action run is recorded for this Project yet.',
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        'No runtime log has been recorded for this Project yet.',
+      ),
+    ).toBeTruthy();
+  });
+
+  it('shows safe backend error recovery to retry or open the canonical Catalog entity', async () => {
+    const { controlContextApi } = await renderCatalogProjectDetail({
+      contextPromise: Promise.reject(new Error('backend unavailable')),
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Backend control context could not be loaded.'),
+      ).toBeTruthy();
+    });
+
+    expect(screen.getByText('backend unavailable')).toBeTruthy();
+    expect(
+      screen.getByText(/Local fixture cards are not treated as authoritative/),
+    ).toBeTruthy();
+    expect(
+      screen
+        .getAllByRole('button', { name: 'Open Catalog entity' })
+        .map(button => button.getAttribute('href')),
+    ).toContain('/catalog/default/system/payment-platform');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry backend read' }));
+    await waitFor(() => {
+      expect(controlContextApi.getProjectControlContext).toHaveBeenCalledTimes(
+        2,
+      );
+    });
+  });
+});
 
 describe('ProjectDetailContent', () => {
   it('loads and displays backend Project control context', async () => {
